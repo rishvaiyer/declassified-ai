@@ -67,6 +67,8 @@ h1{
 }
 h1 .red{color:var(--accent)}
 .dek{font-size:clamp(1.05rem,2.2vw,1.3rem); color:var(--muted); max-width:60ch; margin:.6em 0 0}
+.credit{font-family:var(--font-mono); font-size:12.5px; color:var(--muted); margin:16px 0 0; max-width:60ch; line-height:1.6; border-left:3px solid var(--accent); padding-left:12px}
+.credit a{color:var(--accent-ink); text-decoration:none} .credit a:hover{text-decoration:underline}
 .stamp{
   position:absolute; top:40px; right:8px; transform:rotate(-11deg);
   border:3px double var(--stamp); color:var(--stamp);
@@ -209,7 +211,7 @@ footer .warn{color:var(--accent-ink); font-weight:600}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
-<div class="classbar">FILE // <b>DECLASSIFIED</b> // SOURCE: PUBLIC LEAK ARCHIVE (CL4R1T4S) // HANDLING: TRANSPARENCY</div>
+<div class="classbar">FILE // <b>DECLASSIFIED</b> // SOURCE: CL4R1T4S ARCHIVE BY PLINY (@ELDER-PLINIUS) // HANDLING: TRANSPARENCY</div>
 
 <div class="wrap">
   <header class="hero">
@@ -217,6 +219,7 @@ footer .warn{color:var(--accent-ink); font-weight:600}
     <div class="filetag"><span class="dot"></span>DOSSIER 001 &nbsp; the instructions they never show you</div>
     <h1>The Secret<br><span class="red">Rulebooks</span> of the Machines</h1>
     <p class="dek">Every AI chatbot is handed a hidden list of rules before it ever talks to you — who it is, what it must never say. Here are <span id="d-n"></span> of them, from <span id="d-v"></span> companies, pulled apart and laid side by side.</p>
+    <p class="credit">Source data: the <a href="https://github.com/elder-plinius/CL4R1T4S" target="_blank" rel="noopener">CL4R1T4S</a> archive, collected &amp; maintained by <a href="https://github.com/elder-plinius" target="_blank" rel="noopener"><strong>Pliny · @elder-plinius</strong></a>. This project just visualizes his public collection.</p>
 
     <div class="stats" id="stats"></div>
   </header>

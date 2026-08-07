@@ -5,7 +5,12 @@ who it is, what it must never say. This project takes **67 of those leaked syste
 prompts, from 25 companies**, pulls them apart, and lays them side by side as an
 interactive, single-page data dossier.
 
-**▶ Live demo:** https://rishvaiyer.github.io/declassified-ai/ &nbsp;·&nbsp; _(enable GitHub Pages — see below)_
+**▶ Live demo:** https://rishvaiyer.github.io/declassified-ai/
+
+> **Data credit:** every system prompt here comes from the public
+> **[CL4R1T4S](https://github.com/elder-plinius/CL4R1T4S)** archive, collected and
+> maintained by **[Pliny · @elder-plinius](https://github.com/elder-plinius)**. This
+> project only *visualizes* his collection — all credit for gathering the prompts is his.
 
 ---
 

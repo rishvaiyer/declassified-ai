@@ -1,0 +1,6 @@
+# the upstream archive is cloned on demand, never committed
+CL4R1T4S/
+__pycache__/
+*.pyc
+.DS_Store
+node_modules/

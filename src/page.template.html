@@ -1,0 +1,495 @@
+<title>The Secret Rulebooks of the Machines</title>
+<style>
+/* ---------- DESIGN TOKENS : DECLASSIFIED DOSSIER ---------- */
+:root{
+  /* light = a cool photocopied document */
+  --bg:#E4E6EA; --paper:#F5F6F8; --paper-2:#ECEEF1;
+  --ink:#191C22; --muted:#616A78; --line:#CBCFD6; --line-strong:#AEB4BE;
+  --accent:#B23A2A; --accent-ink:#8F2E20; --accent-rgb:178,58,42;
+  --t-chat:#3F6087; --t-code:#9A6C2A; --t-svc:#6E5379;
+  --stamp:#B23A2A;
+  --diff-add-ink:#1F6B40; --diff-add-bg:rgba(47,125,79,.15); --diff-del-bg:rgba(178,58,42,.13);
+  --font-mono:ui-monospace,"SF Mono","Cascadia Code","Roboto Mono",Menlo,Consolas,monospace;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --shadow:0 1px 2px rgba(25,28,34,.08),0 8px 30px rgba(25,28,34,.06);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#121419; --paper:#1B1E24; --paper-2:#23272F;
+    --ink:#E7E5DF; --muted:#949CA8; --line:#2C323B; --line-strong:#3B424D;
+    --accent:#E0604A; --accent-ink:#EC7358; --accent-rgb:224,96,74;
+    --t-chat:#6E93BE; --t-code:#C79A54; --t-svc:#A488AE;
+    --stamp:#E0604A;
+    --diff-add-ink:#7FD3A0; --diff-add-bg:rgba(95,189,133,.16); --diff-del-bg:rgba(224,96,74,.15);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.32);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121419; --paper:#1B1E24; --paper-2:#23272F;
+  --ink:#E7E5DF; --muted:#949CA8; --line:#2C323B; --line-strong:#3B424D;
+  --accent:#E0604A; --accent-ink:#EC7358; --accent-rgb:224,96,74;
+  --t-chat:#6E93BE; --t-code:#C79A54; --t-svc:#A488AE;
+  --stamp:#E0604A;
+  --diff-add-ink:#7FD3A0; --diff-add-bg:rgba(95,189,133,.16); --diff-del-bg:rgba(224,96,74,.15);
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 34px rgba(0,0,0,.32);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font-sans); font-size:16px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:0 22px}
+a{color:var(--accent-ink); text-underline-offset:3px}
+
+/* ---------- classification banner ---------- */
+.classbar{
+  background:var(--ink); color:var(--bg);
+  font-family:var(--font-mono); font-size:11px; letter-spacing:.28em;
+  text-transform:uppercase; text-align:center; padding:7px 10px;
+  border-bottom:2px solid var(--accent);
+}
+.classbar b{color:var(--stamp); letter-spacing:.28em}
+
+/* ---------- hero ---------- */
+.hero{padding:54px 0 30px; position:relative}
+.filetag{
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.2em;
+  color:var(--muted); text-transform:uppercase;
+  display:flex; gap:14px; flex-wrap:wrap; align-items:center;
+}
+.filetag .dot{width:6px;height:6px;background:var(--accent);border-radius:50%}
+h1{
+  font-family:var(--font-mono); font-weight:700; letter-spacing:-.01em;
+  font-size:clamp(2.2rem,6vw,4.1rem); line-height:1.02; margin:.35em 0 .1em;
+  text-wrap:balance; text-transform:uppercase;
+}
+h1 .red{color:var(--accent)}
+.dek{font-size:clamp(1.05rem,2.2vw,1.3rem); color:var(--muted); max-width:60ch; margin:.6em 0 0}
+.stamp{
+  position:absolute; top:40px; right:8px; transform:rotate(-11deg);
+  border:3px double var(--stamp); color:var(--stamp);
+  font-family:var(--font-mono); font-weight:700; text-transform:uppercase;
+  letter-spacing:.14em; font-size:13px; padding:6px 12px; border-radius:4px;
+  opacity:.9;
+}
+@media(max-width:640px){.stamp{display:none}}
+
+/* ---------- stat strip ---------- */
+.stats{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+  background:var(--line); border:1px solid var(--line); border-radius:10px;
+  overflow:hidden; margin:30px 0 8px;
+}
+.stat{background:var(--paper); padding:16px 18px}
+.stat .n{font-family:var(--font-mono); font-size:clamp(1.5rem,4vw,2.1rem); font-weight:700; font-variant-numeric:tabular-nums; line-height:1}
+.stat .l{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin-top:7px}
+@media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* ---------- section scaffolding ---------- */
+section{padding:42px 0; border-top:1px solid var(--line); margin-top:34px}
+.exhibit{
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.24em;
+  text-transform:uppercase; color:var(--bg); background:var(--ink);
+  display:inline-block; padding:5px 11px; border-radius:3px;
+}
+.exhibit .x{color:var(--stamp)}
+h2{font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.02em; font-size:clamp(1.4rem,3.4vw,2rem); margin:16px 0 6px; text-wrap:balance}
+.note{color:var(--muted); max-width:66ch; margin:.2em 0 0; font-size:.95rem}
+
+/* ---------- legend / tribes ---------- */
+.legend{display:flex; gap:18px; flex-wrap:wrap; margin:18px 0 6px; font-family:var(--font-mono); font-size:11.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+.legend i{width:11px;height:11px;border-radius:2px;display:inline-block;margin-right:6px;vertical-align:-1px}
+.t-chat{background:var(--t-chat)} .t-code{background:var(--t-code)} .t-svc{background:var(--t-svc)}
+
+/* ---------- ban matrix ---------- */
+.matrix-scroll{overflow-x:auto; margin-top:18px; border:1px solid var(--line); border-radius:10px; background:var(--paper)}
+table.matrix{border-collapse:collapse; width:100%; min-width:760px; font-family:var(--font-mono); font-size:12px}
+table.matrix th,table.matrix td{padding:0; text-align:center}
+table.matrix thead th{
+  position:sticky; top:0; background:var(--paper-2); color:var(--muted);
+  font-weight:500; letter-spacing:.02em; padding:12px 6px; vertical-align:bottom;
+  border-bottom:2px solid var(--line-strong); font-size:10.5px; line-height:1.15;
+}
+table.matrix thead th.corner{text-align:left; padding-left:16px}
+table.matrix tbody th{
+  text-align:left; padding:0 14px; font-weight:600; font-size:12.5px; white-space:nowrap;
+  color:var(--ink); border-right:2px solid var(--line-strong); background:var(--paper);
+}
+table.matrix tbody th .chip{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:8px;vertical-align:0}
+table.matrix td{height:34px; border:1px solid var(--line); position:relative; cursor:default}
+table.matrix td span{font-variant-numeric:tabular-nums; color:var(--cellink,transparent); font-size:11px; font-weight:600}
+table.matrix td:hover{outline:2px solid var(--ink); outline-offset:-2px}
+table.matrix tbody tr:hover th{color:var(--accent-ink)}
+
+/* ---------- leaderboard ---------- */
+.controls{display:flex; gap:8px; margin:18px 0 6px; flex-wrap:wrap}
+.btn{
+  font-family:var(--font-mono); font-size:11.5px; letter-spacing:.1em; text-transform:uppercase;
+  padding:7px 13px; border:1px solid var(--line-strong); background:var(--paper); color:var(--muted);
+  border-radius:6px; cursor:pointer;
+}
+.btn[aria-pressed="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.bars{display:flex; flex-direction:column; gap:7px; margin-top:16px}
+.bar{display:grid; grid-template-columns:132px 1fr auto; align-items:center; gap:12px}
+.bar .name{font-family:var(--font-mono); font-size:12px; text-align:right; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.bar .track{height:22px; background:var(--paper-2); border-radius:4px; overflow:hidden; border:1px solid var(--line)}
+.bar .fill{height:100%; width:0; transition:width .9s cubic-bezier(.2,.8,.2,1); border-radius:0 3px 3px 0}
+.bar .val{font-family:var(--font-mono); font-size:12px; font-variant-numeric:tabular-nums; color:var(--muted); min-width:58px; text-align:right}
+@media(max-width:560px){.bar{grid-template-columns:96px 1fr auto}.bar .name{font-size:11px}}
+
+/* ---------- archive browser ---------- */
+.search{
+  width:100%; margin-top:16px; padding:13px 16px; font-family:var(--font-mono); font-size:14px;
+  background:var(--paper); border:1px solid var(--line-strong); border-radius:8px; color:var(--ink);
+}
+.search:focus{outline:2px solid var(--accent); outline-offset:1px}
+.archive{display:flex; flex-direction:column; gap:6px; margin-top:14px}
+.doc{
+  display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px;
+  padding:12px 15px; background:var(--paper); border:1px solid var(--line); border-radius:8px;
+  text-decoration:none; color:inherit; transition:border-color .15s, transform .15s;
+}
+.doc:hover{border-color:var(--accent); transform:translateX(3px)}
+.doc .meta{min-width:0}
+.doc .model{font-family:var(--font-mono); font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.doc .sub{font-size:11.5px; color:var(--muted); font-family:var(--font-mono); letter-spacing:.04em; margin-top:2px}
+.doc .redact{
+  display:inline-block; background:var(--ink); color:transparent; border-radius:2px;
+  padding:0 6px; user-select:none; transition:color .15s, background .15s;
+}
+.doc:hover .redact{background:transparent; color:var(--muted)}
+.doc .wc{font-family:var(--font-mono); font-size:12px; font-variant-numeric:tabular-nums; color:var(--ink); text-align:right; white-space:nowrap}
+.doc .wc small{display:block; color:var(--muted); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase}
+.doc .vtag{width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:7px; vertical-align:1px}
+.empty{color:var(--muted); font-family:var(--font-mono); font-size:13px; padding:20px 4px}
+
+/* ---------- similarity map ---------- */
+.map-wrap{position:relative; margin-top:20px; border:1px solid var(--line); border-radius:12px; background:var(--paper); background-image:radial-gradient(var(--line) 1px,transparent 1px); background-size:26px 26px; overflow:hidden}
+svg#map{display:block; width:100%; height:auto; aspect-ratio:1/1; touch-action:none}
+svg#map circle.pt{cursor:pointer; transition:opacity .15s}
+svg#map.dim circle.pt{opacity:.22}
+svg#map circle.pt.on{opacity:1}
+svg#map circle.pt.cousin{opacity:1}
+svg#map line.link{stroke:var(--ink); stroke-width:2; stroke-dasharray:5 5; opacity:.75}
+.map-tip{
+  position:absolute; pointer-events:none; z-index:5; max-width:230px;
+  background:var(--ink); color:var(--bg); font-family:var(--font-mono); font-size:11.5px; line-height:1.5;
+  padding:9px 11px; border-radius:7px; box-shadow:var(--shadow); transform:translate(-50%,calc(-100% - 14px));
+}
+.map-tip b{color:var(--stamp)}
+.map-tip .cz{color:var(--bg); opacity:.82; display:block; margin-top:5px; border-top:1px solid rgba(128,128,128,.4); padding-top:5px}
+.map-tip .cz b{color:#fff}
+
+/* ---------- diff machine ---------- */
+.diff-pick{display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-top:18px}
+.diff-pick label{font-family:var(--font-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px}
+.diff-pick select{
+  font-family:var(--font-mono); font-size:13px; padding:8px 10px; max-width:260px;
+  background:var(--paper); color:var(--ink); border:1px solid var(--line-strong); border-radius:6px;
+}
+.diff-pick .vs{font-family:var(--font-mono); color:var(--accent-ink); font-weight:700}
+.diff-stat{font-family:var(--font-mono); font-size:12px; color:var(--muted); margin:14px 0 8px; letter-spacing:.03em}
+.diff-stat b{color:var(--ink); font-variant-numeric:tabular-nums}
+.diff-stat .add{color:var(--diff-add-ink)} .diff-stat .del{color:var(--accent-ink)}
+.diff-scroll{max-height:520px; overflow:auto; border:1px solid var(--line); border-radius:10px; background:var(--paper)}
+pre.diff{margin:0; font-family:var(--font-mono); font-size:12px; line-height:1.6; tab-size:2}
+pre.diff .ln{display:block; padding:0 14px; white-space:pre-wrap; word-break:break-word; border-left:3px solid transparent}
+pre.diff .eq{color:var(--muted); opacity:.72}
+pre.diff .add{background:var(--diff-add-bg); color:var(--diff-add-ink); border-left-color:var(--diff-add-ink)}
+pre.diff .del{background:var(--diff-del-bg); color:var(--accent-ink); border-left-color:var(--accent)}
+pre.diff .gap{text-align:center; color:var(--muted); opacity:.5; padding:3px 0; user-select:none}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line); margin-top:40px; padding:30px 0 60px; color:var(--muted); font-size:13px}
+footer .method{font-family:var(--font-mono); font-size:11.5px; line-height:1.7; letter-spacing:.02em}
+footer .warn{color:var(--accent-ink); font-weight:600}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="classbar">FILE // <b>DECLASSIFIED</b> // SOURCE: PUBLIC LEAK ARCHIVE (CL4R1T4S) // HANDLING: TRANSPARENCY</div>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="stamp">Leaked</div>
+    <div class="filetag"><span class="dot"></span>DOSSIER 001 &nbsp; the instructions they never show you</div>
+    <h1>The Secret<br><span class="red">Rulebooks</span> of the Machines</h1>
+    <p class="dek">Every AI chatbot is handed a hidden list of rules before it ever talks to you — who it is, what it must never say. Here are <span id="d-n"></span> of them, from <span id="d-v"></span> companies, pulled apart and laid side by side.</p>
+
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section id="sec-matrix">
+    <span class="exhibit"><span class="x">▓</span> EXHIBIT A</span>
+    <h2>Who Says No To What</h2>
+    <p class="note">Each cell counts how often a company's rulebooks bring up a touchy subject. Darker = more airtime. It's a map of what each lab is nervous about — not a scorecard of who's "safer."</p>
+    <div class="legend">
+      <span><i class="t-chat"></i>Frontier chat</span>
+      <span><i class="t-code"></i>Coding agent</span>
+      <span><i class="t-svc"></i>Service / other</span>
+    </div>
+    <div class="matrix-scroll"><table class="matrix" id="matrix"></table></div>
+  </section>
+
+  <section id="sec-bars">
+    <span class="exhibit"><span class="x">▓</span> EXHIBIT B</span>
+    <h2>Who Writes The Most</h2>
+    <p class="note">Some labs hand their AI a sticky note. Others hand it a novel. Toggle between sheer length and <em>bossiness</em> — how many "must / never / always" commands they cram in per 1,000 words.</p>
+    <div class="controls">
+      <button class="btn" data-metric="avg_words" aria-pressed="true">Length (words)</button>
+      <button class="btn" data-metric="avg_imperative" aria-pressed="false">Bossiness (cmds / 1k)</button>
+    </div>
+    <div class="bars" id="bars"></div>
+  </section>
+
+  <section id="sec-map">
+    <span class="exhibit"><span class="x">▓</span> EXHIBIT C</span>
+    <h2>Who Copied Whose Homework</h2>
+    <p class="note">Every rulebook plotted by the <em>words it uses</em> — close dots share vocabulary. Hover a dot to see its nearest cousin from a <strong>different company</strong>. Watch the coding agents pile into one corner: they didn't write these prompts from scratch.</p>
+    <div class="legend">
+      <span><i class="t-chat"></i>Frontier chat</span>
+      <span><i class="t-code"></i>Coding agent</span>
+      <span><i class="t-svc"></i>Service / other</span>
+      <span style="color:var(--muted)">dot size = length · line = closest cross-company match on hover</span>
+    </div>
+    <div class="map-wrap">
+      <svg id="map" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Scatter plot of rulebook similarity"></svg>
+      <div class="map-tip" id="map-tip" hidden></div>
+    </div>
+  </section>
+
+  <section id="sec-archive">
+    <span class="exhibit"><span class="x">▓</span> EXHIBIT D</span>
+    <h2>The Archive</h2>
+    <p class="note">All <span id="a-n"></span> leaked files. Hover to lift the redaction; click any to read the raw prompt on GitHub. Search by model or company.</p>
+    <input class="search" id="search" placeholder="search: claude, cursor, gemini, gpt…" autocomplete="off">
+    <div class="archive" id="archive"></div>
+  </section>
+
+  <section id="sec-diff">
+    <span class="exhibit"><span class="x">▓</span> EXHIBIT E</span>
+    <h2>The Diff Machine</h2>
+    <p class="note">Line up any two rulebooks and see exactly what changed — <span style="color:var(--accent-ink)">red leaves</span>, <span style="color:var(--diff-add-ink)">green arrives</span>. Default view puts an old Claude next to a new one, so you can watch the rulebook <em>grow</em> as the labs bolt on instruction after instruction.</p>
+    <div class="diff-pick">
+      <label>A <select id="pickA"></select></label>
+      <span class="vs">vs</span>
+      <label>B <select id="pickB"></select></label>
+      <button class="btn" id="onlychg" aria-pressed="true">Changes only</button>
+    </div>
+    <div class="diff-stat" id="diffStat"></div>
+    <div class="diff-scroll"><pre class="diff" id="diffOut"></pre></div>
+  </section>
+
+  <footer>
+    <p class="method">
+      METHOD // Text pulled from the public <a href="https://github.com/elder-plinius/CL4R1T4S" target="_blank" rel="noopener">CL4R1T4S</a> archive of leaked / reverse-engineered system prompts. Category counts are keyword mentions, so a longer rulebook naturally mentions more of everything — read the heat as <em>emphasis</em>, not policy. Nothing here is private: these are the instructions, not the training data.<br><br>
+      <span class="warn">NB //</span> One file in this archive contains a prompt-injection payload aimed at any AI that reads it. The dataset about AI manipulation is, fittingly, also an attempt at it. We parsed for word counts only. 🫡
+    </p>
+  </footer>
+</div>
+
+<script>
+const DATA = __DATA__;
+const TCOLOR = {"Frontier chat":"var(--t-chat)","Coding agent":"var(--t-code)","Service / other":"var(--t-svc)"};
+const $ = s => document.querySelector(s);
+
+/* stats */
+$("#d-n").textContent = DATA.stats.n_prompts;
+$("#d-v").textContent = DATA.stats.n_vendors;
+$("#a-n").textContent = DATA.stats.n_prompts;
+const fmt = n => n.toLocaleString("en-US");
+$("#stats").innerHTML = [
+  [DATA.stats.n_vendors,"companies"],
+  [DATA.stats.n_prompts,"rulebooks"],
+  [fmt(DATA.stats.total_words),"total words"],
+  [DATA.categories.length,"tripwire topics"],
+].map(([n,l])=>`<div class="stat"><div class="n">${typeof n==="number"?fmt(n):n}</div><div class="l">${l}</div></div>`).join("");
+
+/* ---- ban matrix ---- */
+(function(){
+  const cats = DATA.categories;
+  // column max for normalization
+  const colMax = {};
+  cats.forEach(c => colMax[c] = Math.max(1, ...DATA.vendors.map(v=>v.categories[c])));
+  const order = ["Frontier chat","Coding agent","Service / other"];
+  const vendors = [...DATA.vendors].sort((a,b)=>
+    order.indexOf(a.tribe)-order.indexOf(b.tribe) || b.total_words-a.total_words);
+  let html = "<thead><tr><th class='corner'>Company</th>";
+  cats.forEach(c => html += `<th>${c.replace(" / ","<br>/ ")}</th>`);
+  html += "</tr></thead><tbody>";
+  vendors.forEach(v=>{
+    html += `<tr><th><span class="chip" style="background:${TCOLOR[v.tribe]}"></span>${v.vendor}</th>`;
+    cats.forEach(c=>{
+      const raw = v.categories[c];
+      const a = raw===0 ? 0 : 0.12 + 0.88*(raw/colMax[c]);
+      const ink = a>0.55 ? "var(--paper)" : (raw>0 ? "var(--ink)" : "transparent");
+      html += `<td title="${v.vendor} — ${c}: ${raw} mentions" style="background:rgba(var(--accent-rgb),${a.toFixed(3)});--cellink:${ink}"><span>${raw||""}</span></td>`;
+    });
+    html += "</tr>";
+  });
+  $("#matrix").innerHTML = html + "</tbody>";
+})();
+
+/* ---- leaderboard ---- */
+const bars = $("#bars");
+function drawBars(metric){
+  const unit = metric==="avg_words" ? "" : "/1k";
+  const sorted = [...DATA.vendors].sort((a,b)=>b[metric]-a[metric]);
+  const max = Math.max(...sorted.map(v=>v[metric]));
+  bars.innerHTML = sorted.map(v=>`
+    <div class="bar">
+      <div class="name">${v.vendor}</div>
+      <div class="track"><div class="fill" data-w="${(v[metric]/max*100).toFixed(1)}" style="background:${TCOLOR[v.tribe]}"></div></div>
+      <div class="val">${fmt(v[metric])}${unit}</div>
+    </div>`).join("");
+  requestAnimationFrame(()=>bars.querySelectorAll(".fill").forEach(f=>f.style.width=f.dataset.w+"%"));
+}
+document.querySelectorAll(".controls .btn").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll(".controls .btn").forEach(x=>x.setAttribute("aria-pressed","false"));
+    b.setAttribute("aria-pressed","true");
+    drawBars(b.dataset.metric);
+  });
+});
+drawBars("avg_words");
+
+/* ---- archive ---- */
+const archive = $("#archive");
+const REPO = "https://github.com/elder-plinius/CL4R1T4S/blob/main/";
+function drawArchive(q=""){
+  q = q.trim().toLowerCase();
+  const rows = DATA.prompts.filter(p =>
+    !q || p.model.toLowerCase().includes(q) || p.vendor.toLowerCase().includes(q));
+  if(!rows.length){ archive.innerHTML = `<div class="empty">No files match “${q}”.</div>`; return; }
+  archive.innerHTML = rows.map(p=>{
+    const date = p.date ? p.date : "date unknown";
+    return `<a class="doc" href="${REPO}${encodeURI(p.file)}" target="_blank" rel="noopener">
+      <div class="meta">
+        <div class="model"><span class="vtag" style="background:${TCOLOR[p.tribe]}"></span>${p.model}</div>
+        <div class="sub">${p.vendor} · <span class="redact">${date}</span></div>
+      </div>
+      <div class="wc">${fmt(p.words)}<small>words</small></div>
+    </a>`;
+  }).join("");
+}
+$("#search").addEventListener("input", e=>drawArchive(e.target.value));
+drawArchive();
+
+/* ---- similarity map ---- */
+(function(){
+  const svg = $("#map"), tip = $("#map-tip"), wrap = svg.parentElement;
+  const NS = "http://www.w3.org/2000/svg";
+  const pts = DATA.map, PAD = 70, SZ = 1000;
+  const sx = x => PAD + (x+1)/2 * (SZ-2*PAD);
+  const sy = y => PAD + (1-(y+1)/2) * (SZ-2*PAD);   // flip y for screen
+  const rOf = w => 7 + Math.sqrt(w)/9;              // area-ish scaling
+  const col = t => TCOLOR[t];
+  const line = document.createElementNS(NS,"line");
+  line.setAttribute("class","link"); line.style.display="none"; svg.appendChild(line);
+  const nodes = pts.map((p,i)=>{
+    const c = document.createElementNS(NS,"circle");
+    c.setAttribute("class","pt"); c.setAttribute("cx",sx(p.x)); c.setAttribute("cy",sy(p.y));
+    c.setAttribute("r",rOf(p.words)); c.setAttribute("fill",col(p.tribe));
+    c.setAttribute("fill-opacity","0.82"); c.setAttribute("stroke","var(--paper)"); c.setAttribute("stroke-width","1.5");
+    c.dataset.i = i; svg.appendChild(c); return c;
+  });
+  function enter(i){
+    const p = pts[i], j = p.cousin_i;
+    svg.classList.add("dim");
+    nodes[i].classList.add("on"); nodes[j] && nodes[j].classList.add("cousin");
+    if(nodes[j]){
+      line.setAttribute("x1",sx(p.x)); line.setAttribute("y1",sy(p.y));
+      line.setAttribute("x2",sx(pts[j].x)); line.setAttribute("y2",sy(pts[j].y));
+      line.style.display="";
+    }
+    tip.hidden=false;
+    tip.innerHTML = `<b>${p.model}</b><br>${p.vendor} · ${fmt(p.words)} words`+
+      `<span class="cz">closest cousin ↝ <b>${p.cousin} · ${p.cousin_vendor}</b><br>${Math.round(p.cousin_sim*100)}% shared vocabulary</span>`;
+    const box = svg.getBoundingClientRect();
+    tip.style.left = (sx(p.x)/SZ*box.width) + "px";
+    tip.style.top  = (sy(p.y)/SZ*box.height) + "px";
+  }
+  function leave(){ svg.classList.remove("dim"); line.style.display="none"; tip.hidden=true;
+    nodes.forEach(n=>n.classList.remove("on","cousin")); }
+  nodes.forEach(n=>{
+    n.addEventListener("mouseenter",()=>enter(+n.dataset.i));
+    n.addEventListener("click",()=>enter(+n.dataset.i));
+  });
+  svg.addEventListener("mouseleave",leave);
+})();
+
+/* ---- diff machine ---- */
+const TEXTS = __TEXTS__;
+(function(){
+  const A=$("#pickA"), B=$("#pickB"), out=$("#diffOut"), stat=$("#diffStat"), onlyBtn=$("#onlychg");
+  let onlyChanges = true;
+  // build grouped dropdowns
+  const byVendor = {};
+  DATA.prompts.forEach(p=>(byVendor[p.vendor] ||= []).push(p));
+  function opts(sel){
+    Object.keys(byVendor).sort().forEach(v=>{
+      const og=document.createElement("optgroup"); og.label=v;
+      byVendor[v].forEach(p=>{
+        const o=document.createElement("option"); o.value=p.file; o.textContent=p.model; og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+  }
+  opts(A); opts(B);
+  const pick=(sel,file)=>{ if([...sel.options].some(o=>o.value===file)) sel.value=file; };
+  pick(A,"ANTHROPIC/Claude_Sonnet_3.5.md"); pick(B,"ANTHROPIC/OPUS-5.md");
+
+  const norm = t => t.replace(/\r/g,"").split("\n").map(l=>l.replace(/\s+$/,""));
+  function lcsDiff(a,b){
+    const n=a.length,m=b.length;
+    if(n>2600||m>2600){ // guard against pathological cost
+      return {rows:[["note",`Files too long to diff line-by-line live (${n} vs ${m} lines). Open them in the archive instead.`]],add:0,del:0};
+    }
+    const dp=Array.from({length:n+1},()=>new Uint16Array(m+1));
+    for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)
+      dp[i][j]=a[i]===b[j]?dp[i+1][j+1]+1:Math.max(dp[i+1][j],dp[i][j+1]);
+    const rows=[]; let i=0,j=0,add=0,del=0;
+    while(i<n&&j<m){
+      if(a[i]===b[j]){rows.push([" ",a[i]]);i++;j++;}
+      else if(dp[i+1][j]>=dp[i][j+1]){rows.push(["-",a[i]]);i++;del++;}
+      else{rows.push(["+",b[j]]);j++;add++;}
+    }
+    while(i<n){rows.push(["-",a[i++]]);del++;}
+    while(j<m){rows.push(["+",b[j++]]);add++;}
+    return {rows,add,del};
+  }
+  const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  function render(){
+    const fa=A.value, fb=B.value;
+    const a=norm(TEXTS[fa]||""), b=norm(TEXTS[fb]||"");
+    const {rows,add,del,note}=lcsDiff(a,b);
+    const wa=(TEXTS[fa]||"").split(/\s+/).filter(Boolean).length;
+    const wb=(TEXTS[fb]||"").split(/\s+/).filter(Boolean).length;
+    const delta=wb-wa;
+    stat.innerHTML = rows[0] && rows[0][0]==="note" ? "" :
+      `<b>${fmt(wa)}</b> words → <b>${fmt(wb)}</b> words `+
+      `(<b style="color:${delta>=0?'var(--diff-add-ink)':'var(--accent-ink)'}">${delta>=0?'+':''}${fmt(delta)}</b>) · `+
+      `<span class="add">+${add} lines</span> · <span class="del">−${del} lines</span>`;
+    let html="", gap=false;
+    for(let k=0;k<rows.length;k++){
+      const [tag,txt]=rows[k];
+      if(tag==="note"){ html=`<span class="ln eq">${esc(txt)}</span>`; break; }
+      if(tag===" "){
+        if(onlyChanges){
+          // keep 1 line of context around changes
+          const near = (rows[k-1]&&rows[k-1][0]!==" ")||(rows[k+1]&&rows[k+1][0]!==" ");
+          if(!near){ if(!gap){html+=`<span class="ln gap">⋯</span>`; gap=true;} continue; }
+        }
+        gap=false; html+=`<span class="ln eq"> ${esc(txt)}</span>`;
+      } else if(tag==="+"){ gap=false; html+=`<span class="ln add">+${esc(txt)}</span>`; }
+      else { gap=false; html+=`<span class="ln del">-${esc(txt)}</span>`; }
+    }
+    out.innerHTML=html || `<span class="ln eq"> (identical)</span>`;
+  }
+  A.addEventListener("change",render); B.addEventListener("change",render);
+  onlyBtn.addEventListener("click",()=>{ onlyChanges=!onlyChanges; onlyBtn.setAttribute("aria-pressed",onlyChanges); render(); });
+  render();
+})();
+</script>

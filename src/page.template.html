@@ -148,6 +148,8 @@ table.matrix tbody tr:hover th{color:var(--accent-ink)}
 }
 .search:focus{outline:2px solid var(--accent); outline-offset:1px}
 .archive{display:flex; flex-direction:column; gap:6px; margin-top:14px}
+.archive.scroll{max-height:540px; overflow-y:auto; padding-right:4px}
+.arc-more{margin-top:14px; width:100%}
 .doc{
   display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px;
   padding:12px 15px; background:var(--paper); border:1px solid var(--line); border-radius:8px;
@@ -288,6 +290,7 @@ footer .warn{color:var(--accent-ink); font-weight:600}
     <p class="note">All <span id="a-n"></span> leaked files. Hover to lift the redaction; click any to read the raw prompt on GitHub. Search by model or company.</p>
     <input class="search" id="search" placeholder="search: claude, cursor, gemini, gpt…" autocomplete="off">
     <div class="archive" id="archive"></div>
+    <button class="btn arc-more" id="arcMore" hidden></button>
   </section>
 
   <section id="sec-diff">
@@ -404,24 +407,37 @@ const REPO = {
   "jujumilk3": "https://github.com/jujumilk3/leaked-system-prompts/blob/main/",
 };
 const SRCLABEL = {"CL4R1T4S":"Pliny", "jujumilk3":"jujumilk3"};
-function drawArchive(q=""){
-  q = q.trim().toLowerCase();
+const arcMore = $("#arcMore");
+const CAP = 6;               // collapsed: show only the top few by length
+let arcExpanded = false, arcQuery = "";
+const docHTML = p => {
+  const date = p.date ? p.date : "date unknown";
+  const href = (REPO[p.source]||"") + encodeURI(p.file);
+  return `<a class="doc" href="${href}" target="_blank" rel="noopener">
+    <div class="meta">
+      <div class="model"><span class="vtag" style="background:${TCOLOR[p.tribe]}"></span>${p.model}</div>
+      <div class="sub">${p.vendor} · <span class="redact">${date}</span> · via ${SRCLABEL[p.source]||p.source}</div>
+    </div>
+    <div class="wc">${fmt(p.words)}<small>words</small></div></a>`;
+};
+function drawArchive(){
+  const q = arcQuery.trim().toLowerCase();
   const rows = DATA.prompts.filter(p =>
     !q || p.model.toLowerCase().includes(q) || p.vendor.toLowerCase().includes(q));
-  if(!rows.length){ archive.innerHTML = `<div class="empty">No files match “${q}”.</div>`; return; }
-  archive.innerHTML = rows.map(p=>{
-    const date = p.date ? p.date : "date unknown";
-    const href = (REPO[p.source]||"") + encodeURI(p.file);
-    return `<a class="doc" href="${href}" target="_blank" rel="noopener">
-      <div class="meta">
-        <div class="model"><span class="vtag" style="background:${TCOLOR[p.tribe]}"></span>${p.model}</div>
-        <div class="sub">${p.vendor} · <span class="redact">${date}</span> · via ${SRCLABEL[p.source]||p.source}</div>
-      </div>
-      <div class="wc">${fmt(p.words)}<small>words</small></div>
-    </a>`;
-  }).join("");
+  if(!rows.length){ archive.innerHTML = `<div class="empty">No files match “${q}”.</div>`;
+    archive.classList.remove("scroll"); arcMore.hidden = true; return; }
+  const searching = !!q;
+  const show = (searching || arcExpanded) ? rows : rows.slice(0, CAP);
+  archive.innerHTML = show.map(docHTML).join("");
+  // scroll box only when the list is long
+  archive.classList.toggle("scroll", show.length > CAP);
+  if(searching || rows.length <= CAP){ arcMore.hidden = true; }
+  else { arcMore.hidden = false;
+    arcMore.textContent = arcExpanded ? "Show fewer ▴" : `Show all ${fmt(rows.length)} files ▾`; }
 }
-$("#search").addEventListener("input", e=>drawArchive(e.target.value));
+arcMore.addEventListener("click", ()=>{ arcExpanded = !arcExpanded; drawArchive();
+  if(!arcExpanded) $("#sec-archive").scrollIntoView({behavior:"smooth", block:"start"}); });
+$("#search").addEventListener("input", e=>{ arcQuery = e.target.value; arcExpanded = false; drawArchive(); });
 drawArchive();
 
 /* ---- similarity map: interactive canvas force-web ---- */
@@ -456,24 +472,24 @@ drawArchive();
   }
 
   function step(){
-    const cx=W/2, cy=H/2, k=0.0016, rep=520;
+    const cx=W/2, cy=H/2, k=0.0011, rep=560, MAXF=0.85, MAXV=3.6, DAMP=0.76;
     for(let i=0;i<P.length;i++){
       const a=P[i]; if(i===drag) continue;
-      a.vx += (cx-a.x)*k; a.vy += (cy-a.y)*k;              // gravity to center
+      a.vx += (cx-a.x)*k; a.vy += (cy-a.y)*k;              // gentle gravity to center
     }
-    for(let i=0;i<P.length;i++){                            // repulsion
+    for(let i=0;i<P.length;i++){                            // repulsion (force-capped)
       const a=P[i];
       for(let j=i+1;j<P.length;j++){
         const b=P[j]; let dx=a.x-b.x, dy=a.y-b.y; let d2=dx*dx+dy*dy||0.01;
-        if(d2>26000) continue;
-        const f=rep/d2, d=Math.sqrt(d2), fx=dx/d*f, fy=dy/d*f;
+        if(d2>24000) continue;
+        const d=Math.sqrt(d2), f=Math.min(rep/d2, MAXF), fx=dx/d*f, fy=dy/d*f;
         if(i!==drag){a.vx+=fx; a.vy+=fy;} if(j!==drag){b.vx-=fx; b.vy-=fy;}
       }
     }
-    for(const e of E){                                      // springs
-      const a=P[e[0]], b=P[e[1]]; const rest=48+(1-e[2])*120;
+    for(const e of E){                                      // soft springs
+      const a=P[e[0]], b=P[e[1]]; const rest=52+(1-e[2])*120;
       let dx=b.x-a.x, dy=b.y-a.y; const d=Math.hypot(dx,dy)||0.01;
-      const f=(d-rest)*0.02*(0.4+e[2]); const fx=dx/d*f, fy=dy/d*f;
+      const f=(d-rest)*0.012*(0.4+e[2]); const fx=dx/d*f, fy=dy/d*f;
       if(e[0]!==drag){a.vx+=fx; a.vy+=fy;} if(e[1]!==drag){b.vx-=fx; b.vy-=fy;}
     }
     let ke=0;
@@ -481,7 +497,12 @@ drawArchive();
       const p=P[i]; if(i===drag) continue;
       if(mode==="map"){ p.x+=(cx+N[i].sx*(Math.min(W,H)/2-46)-p.x)*0.12;
                         p.y+=(cy-N[i].sy*(Math.min(W,H)/2-46)-p.y)*0.12; }
-      else { p.vx*=0.86; p.vy*=0.86; p.x+=p.vx; p.y+=p.vy; ke+=p.vx*p.vx+p.vy*p.vy; }
+      else {
+        p.vx*=DAMP; p.vy*=DAMP;
+        const sp=Math.hypot(p.vx,p.vy);                     // clamp top speed → no bounce
+        if(sp>MAXV){ p.vx=p.vx/sp*MAXV; p.vy=p.vy/sp*MAXV; }
+        p.x+=p.vx; p.y+=p.vy; ke+=p.vx*p.vx+p.vy*p.vy;
+      }
       p.x=Math.max(p.r+2,Math.min(W-p.r-2,p.x)); p.y=Math.max(p.r+2,Math.min(H-p.r-2,p.y));
     }
     energy = mode==="map" ? energy*0.9 : ke/P.length;

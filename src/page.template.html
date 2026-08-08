@@ -169,11 +169,15 @@ table.matrix tbody tr:hover th{color:var(--accent-ink)}
 .doc .vtag{width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:7px; vertical-align:1px}
 .empty{color:var(--muted); font-family:var(--font-mono); font-size:13px; padding:20px 4px}
 
-/* ---------- similarity map (canvas) ---------- */
-.map-wrap{position:relative; margin-top:16px; border:1px solid var(--line); border-radius:12px; background:var(--paper); background-image:radial-gradient(var(--line) 1px,transparent 1px); background-size:26px 26px; overflow:hidden}
-canvas#map{display:block; width:100%; height:560px; touch-action:none; cursor:grab}
-canvas#map:active{cursor:grabbing}
-@media(max-width:560px){canvas#map{height:440px}}
+/* ---------- explore-the-field scatter (canvas) ---------- */
+.map-controls{display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin:18px 0 4px}
+.map-controls label{font-family:var(--font-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); display:flex; align-items:center; gap:8px}
+.map-controls select{font-family:var(--font-mono); font-size:13px; padding:7px 9px; background:var(--paper); color:var(--ink); border:1px solid var(--line-strong); border-radius:6px}
+.map-controls .dot-search{margin:0; flex:1; min-width:200px; max-width:340px; padding:9px 13px; font-size:13px}
+.map-wrap{position:relative; margin-top:14px; border:1px solid var(--line); border-radius:12px; background:var(--paper); overflow:hidden}
+canvas#map{display:block; width:100%; height:460px; touch-action:none; cursor:crosshair}
+@media(max-width:560px){canvas#map{height:400px}}
+#mapLegend .pick{color:var(--accent-ink)} #mapLegend .pick i{background:var(--accent)}
 .map-tip{
   position:absolute; pointer-events:none; z-index:5; max-width:230px;
   background:var(--ink); color:var(--bg); font-family:var(--font-mono); font-size:11.5px; line-height:1.5;
@@ -266,20 +270,16 @@ footer .warn{color:var(--accent-ink); font-weight:600}
 
   <section id="sec-map">
     <span class="exhibit"><span class="x">▓</span> EXHIBIT C</span>
-    <h2>Who Copied Whose Homework</h2>
-    <p class="note">All <span id="m-n"></span> rulebooks placed by the <em>words they use</em>. In <strong>Web</strong> view, glowing lines link the most-similar prompts and you can drag nodes around; in <strong>Map</strong> view they settle by overall similarity. Hover any node for its closest cousin from a <strong>different company</strong>.</p>
-    <div class="controls">
-      <button class="btn" id="viewWeb" aria-pressed="true">Web · force graph</button>
-      <button class="btn" id="viewMap" aria-pressed="false">Map · similarity</button>
+    <h2>Explore the Field</h2>
+    <p class="note">Every dot is one rulebook — <strong>you decide what the chart shows</strong>. It starts with the biggest few; <strong>search to drop more onto the chart</strong> (they land in <span style="color:var(--accent-ink);font-weight:600">orange</span>). Pick what the X and Y axes measure, and hover any dot for the details.</p>
+    <div class="map-controls">
+      <label>X axis <select id="axX"></select></label>
+      <label>Y axis <select id="axY"></select></label>
+      <input class="search dot-search" id="dotSearch" placeholder="＋ add to chart: claude, cursor, gpt…" autocomplete="off">
     </div>
-    <div class="legend">
-      <span><i class="t-chat"></i>Frontier chat</span>
-      <span><i class="t-code"></i>Coding agent</span>
-      <span><i class="t-svc"></i>Service / other</span>
-      <span style="color:var(--muted)">node size = length · lines = shared vocabulary</span>
-    </div>
+    <div class="legend" id="mapLegend"></div>
     <div class="map-wrap">
-      <canvas id="map" role="img" aria-label="Interactive similarity graph of rulebooks"></canvas>
+      <canvas id="map" role="img" aria-label="Customizable scatter plot of rulebooks"></canvas>
       <div class="map-tip" id="map-tip" hidden></div>
     </div>
   </section>
@@ -342,7 +342,6 @@ const fmt = n => n.toLocaleString("en-US");
 $("#d-n").textContent = DATA.stats.n_prompts;
 $("#d-v").textContent = DATA.stats.n_vendors;
 $("#a-n").textContent = DATA.stats.n_prompts;
-$("#m-n").textContent = DATA.stats.n_prompts;
 $("#stats").innerHTML = [
   [DATA.stats.n_vendors,"companies"],
   [DATA.stats.n_prompts,"rulebooks"],
@@ -440,153 +439,154 @@ arcMore.addEventListener("click", ()=>{ arcExpanded = !arcExpanded; drawArchive(
 $("#search").addEventListener("input", e=>{ arcQuery = e.target.value; arcExpanded = false; drawArchive(); });
 drawArchive();
 
-/* ---- similarity map: interactive canvas force-web ---- */
+/* ---- explore-the-field: customizable scatter ---- */
 (function(){
   const cv = $("#map"), tip = $("#map-tip"), ctx = cv.getContext("2d");
-  const N = DATA.map.nodes, E = DATA.map.edges;
-  let W = 0, H = 0, DPR = Math.min(2, window.devicePixelRatio || 1);
-  let mode = "web", hover = -1, drag = -1, raf = 0, energy = 1;
-  const reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const nodes = DATA.map.nodes;                 // aligned 1:1 with DATA.prompts
+  let W = 0, H = 0, DPR = Math.min(2, window.devicePixelRatio || 1), hover = -1;
 
-  // resolve theme colors (canvas can't use CSS vars directly)
   let C = {};
   function readColors(){
-    const g = getComputedStyle(document.documentElement);
-    const v = n => g.getPropertyValue(n).trim();
-    C = {chat:v("--t-chat"), code:v("--t-code"), svc:v("--t-svc"),
-         ink:v("--ink"), paper:v("--paper"), line:v("--line-strong"), accent:v("--accent")};
+    const g = getComputedStyle(document.documentElement); const v = n => g.getPropertyValue(n).trim();
+    C = {chat:v("--t-chat"), code:v("--t-code"), svc:v("--t-svc"), ink:v("--ink"),
+         paper:v("--paper"), line:v("--line"), muted:v("--muted"), accent:v("--accent")};
   }
   const tribeCol = t => t==="Coding agent"?C.code : t==="Service / other"?C.svc : C.chat;
-  const rOf = w => 3.4 + Math.sqrt(w)/13;
+  const rOf = w => 4 + Math.sqrt(w)/16;
 
-  // simulation state, seeded from MDS coords
-  const P = N.map(n => ({x:0,y:0,vx:0,vy:0,r:rOf(n.words), sx:n.x, sy:n.y}));
-  function seed(){
-    const pad = 46, sc = Math.min(W,H)/2 - pad, cx = W/2, cy = H/2;
-    P.forEach((p,i)=>{ p.x = cx + N[i].x*sc; p.y = cy - N[i].y*sc; p.vx=p.vy=0; });
-  }
-  function resize(){
-    W = cv.clientWidth; H = cv.clientHeight;
-    cv.width = W*DPR; cv.height = H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
-    seed(); energy = 1; kick();
+  const MON={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  function dnum(d){                              // parse the mixed date formats
+    if(!d) return null; d=(""+d).toLowerCase(); let m;
+    if(m=/(\d{4})-(\d{1,2})-(\d{1,2})/.exec(d)) return Date.UTC(+m[1],+m[2]-1,+m[3]);
+    if((m=/([a-z]{3})-(\d{1,2})-(\d{4})/.exec(d)) && MON[m[1]]!=null) return Date.UTC(+m[3],MON[m[1]],+m[2]);
+    if(m=/(\d{1,2})-(\d{1,2})-(\d{2,4})/.exec(d)){ let y=+m[3]; if(y<100)y+=2000; return Date.UTC(y,+m[1]-1,+m[2]); }
+    if(m=/(\d{4})/.exec(d)) return Date.UTC(+m[1],0,1);
+    return null;
   }
 
-  function step(){
-    const cx=W/2, cy=H/2, k=0.0011, rep=560, MAXF=0.85, MAXV=3.6, DAMP=0.76;
-    for(let i=0;i<P.length;i++){
-      const a=P[i]; if(i===drag) continue;
-      a.vx += (cx-a.x)*k; a.vy += (cy-a.y)*k;              // gentle gravity to center
-    }
-    for(let i=0;i<P.length;i++){                            // repulsion (force-capped)
-      const a=P[i];
-      for(let j=i+1;j<P.length;j++){
-        const b=P[j]; let dx=a.x-b.x, dy=a.y-b.y; let d2=dx*dx+dy*dy||0.01;
-        if(d2>24000) continue;
-        const d=Math.sqrt(d2), f=Math.min(rep/d2, MAXF), fx=dx/d*f, fy=dy/d*f;
-        if(i!==drag){a.vx+=fx; a.vy+=fy;} if(j!==drag){b.vx-=fx; b.vy-=fy;}
-      }
-    }
-    for(const e of E){                                      // soft springs
-      const a=P[e[0]], b=P[e[1]]; const rest=52+(1-e[2])*120;
-      let dx=b.x-a.x, dy=b.y-a.y; const d=Math.hypot(dx,dy)||0.01;
-      const f=(d-rest)*0.012*(0.4+e[2]); const fx=dx/d*f, fy=dy/d*f;
-      if(e[0]!==drag){a.vx+=fx; a.vy+=fy;} if(e[1]!==drag){b.vx-=fx; b.vy-=fy;}
-    }
-    let ke=0;
-    for(let i=0;i<P.length;i++){
-      const p=P[i]; if(i===drag) continue;
-      if(mode==="map"){ p.x+=(cx+N[i].sx*(Math.min(W,H)/2-46)-p.x)*0.12;
-                        p.y+=(cy-N[i].sy*(Math.min(W,H)/2-46)-p.y)*0.12; }
-      else {
-        p.vx*=DAMP; p.vy*=DAMP;
-        const sp=Math.hypot(p.vx,p.vy);                     // clamp top speed → no bounce
-        if(sp>MAXV){ p.vx=p.vx/sp*MAXV; p.vy=p.vy/sp*MAXV; }
-        p.x+=p.vx; p.y+=p.vy; ke+=p.vx*p.vx+p.vy*p.vy;
-      }
-      p.x=Math.max(p.r+2,Math.min(W-p.r-2,p.x)); p.y=Math.max(p.r+2,Math.min(H-p.r-2,p.y));
-    }
-    energy = mode==="map" ? energy*0.9 : ke/P.length;
+  const P = DATA.prompts.map((p,i)=>({
+    i, model:p.model, vendor:p.vendor, tribe:p.tribe, source:p.source,
+    words:p.words, boss:p.imperative_per_1k, dateN:dnum(p.date), dateStr:p.date,
+    cousin:nodes[i].cousin, cousinV:nodes[i].cousin_vendor, cousinSim:nodes[i].cousin_sim,
+    x:0, y:0, base:false, added:false, vis:false
+  }));
+
+  const AX = {
+    words:{label:"Length (words)", get:p=>p.words, log:true},
+    boss: {label:"Bossiness (cmds / 1k)", get:p=>p.boss},
+    date: {label:"Date leaked", get:p=>p.dateN, date:true},
+  };
+  const axX=$("#axX"), axY=$("#axY");
+  for(const k in AX){ axX.add(new Option(AX[k].label,k)); axY.add(new Option(AX[k].label,k)); }
+  axX.value="words"; axY.value="boss";
+
+  // start with just the biggest few; the rest arrive via search
+  [...P].sort((a,b)=>b.words-a.words).slice(0,6).forEach(p=>p.base=true);
+  let query="";
+  function applyQuery(){
+    const q=query.trim().toLowerCase();
+    P.forEach(p=>{ p.added = !!q && (p.model.toLowerCase().includes(q)||p.vendor.toLowerCase().includes(q)); });
+  }
+
+  function legend(){
+    $("#mapLegend").innerHTML =
+      `<span><i class="t-chat"></i>Frontier chat</span>`+
+      `<span><i class="t-code"></i>Coding agent</span>`+
+      `<span><i class="t-svc"></i>Service / other</span>`+
+      `<span class="pick"><i></i>your search</span>`+
+      `<span style="color:var(--muted)">dot size = length</span>`;
+  }
+
+  const M={l:60,r:20,t:20,b:46};
+  function scale(key,a,b){
+    const ax=AX[key], t=v=>ax.log?Math.log10(Math.max(1,v)):v;
+    const all=P.map(ax.get).filter(v=>v!=null&&isFinite(v));
+    let lo=all.length?Math.min(...all):0, hi=all.length?Math.max(...all):1;
+    if(lo===hi) hi=lo+1; lo=t(lo); hi=t(hi);
+    if(!isFinite(lo)||!isFinite(hi)){lo=0;hi=1;}
+    const pad=(hi-lo)*0.07; lo-=pad; hi+=pad;
+    const toPx=v=>a+(t(v)-lo)/(hi-lo)*(b-a);
+    let ticks=[];
+    if(ax.date){ const y0=new Date(lo).getUTCFullYear(), y1=new Date(hi).getUTCFullYear();
+      for(let y=y0;y<=y1;y++){ const v=Date.UTC(y,0,1); if(t(v)>=lo&&t(v)<=hi) ticks.push([toPx(v),"'"+String(y).slice(2)]); } }
+    else if(ax.log){ [30,100,300,1000,3000,10000,30000].forEach(v=>{ if(t(v)>=lo&&t(v)<=hi) ticks.push([toPx(v), v>=1000?(v/1000)+"k":""+v]); }); }
+    else { for(let i=0;i<=5;i++){ ticks.push([a+(b-a)*i/5, Math.round(lo+(hi-lo)*i/5)]); } }
+    return {toPx,ticks};
+  }
+
+  let SX, SY;
+  function compute(){
+    applyQuery();
+    SX=scale(axX.value, M.l, W-M.r);
+    SY=scale(axY.value, H-M.b, M.t);
+    const gx=AX[axX.value].get, gy=AX[axY.value].get;
+    P.forEach(p=>{ const xv=gx(p), yv=gy(p);
+      p.vis = (p.base||p.added) && xv!=null && yv!=null && isFinite(xv) && isFinite(yv);
+      if(p.vis){ p.x=SX.toPx(xv); p.y=SY.toPx(yv); } });
   }
 
   function draw(){
     ctx.clearRect(0,0,W,H);
-    const cousin = hover>=0 ? N[hover].cousin_i : -1;
-    // edges
-    ctx.lineWidth=1;
-    for(const e of E){
-      const a=P[e[0]], b=P[e[1]];
-      const hot = hover>=0 && (e[0]===hover||e[1]===hover);
-      ctx.strokeStyle = hot ? C.accent : C.line;
-      ctx.globalAlpha = hover>=0 ? (hot?0.9:0.06) : (0.12+e[2]*0.4);
-      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
-    }
-    // cousin link on hover
-    if(hover>=0 && cousin>=0){
-      ctx.globalAlpha=0.9; ctx.strokeStyle=C.ink; ctx.lineWidth=1.6; ctx.setLineDash([5,4]);
-      ctx.beginPath(); ctx.moveTo(P[hover].x,P[hover].y); ctx.lineTo(P[cousin].x,P[cousin].y); ctx.stroke();
-      ctx.setLineDash([]);
-    }
-    // nodes
-    for(let i=0;i<P.length;i++){
-      const p=P[i], n=N[i];
-      const faded = hover>=0 && i!==hover && i!==cousin &&
-                    !(mode==="web" && E.some(e=>(e[0]===hover&&e[1]===i)||(e[1]===hover&&e[0]===i)));
-      ctx.globalAlpha = faded ? 0.18 : 1;
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fillStyle=tribeCol(n.tribe); ctx.fill();
-      if(i===hover||i===cousin){ ctx.lineWidth=2; ctx.strokeStyle=i===hover?C.ink:C.accent; ctx.stroke(); }
-      else { ctx.lineWidth=1; ctx.strokeStyle=C.paper; ctx.stroke(); }
-    }
+    ctx.font="10px ui-monospace,Menlo,monospace"; ctx.strokeStyle=C.line; ctx.lineWidth=1;
+    ctx.fillStyle=C.muted; ctx.textAlign="center"; ctx.textBaseline="top";
+    SX.ticks.forEach(([px,lb])=>{ ctx.globalAlpha=.5; ctx.beginPath(); ctx.moveTo(px,M.t); ctx.lineTo(px,H-M.b); ctx.stroke();
+      ctx.globalAlpha=1; ctx.fillText(lb,px,H-M.b+7); });
+    ctx.textAlign="right"; ctx.textBaseline="middle";
+    SY.ticks.forEach(([py,lb])=>{ ctx.globalAlpha=.5; ctx.beginPath(); ctx.moveTo(M.l,py); ctx.lineTo(W-M.r,py); ctx.stroke();
+      ctx.globalAlpha=1; ctx.fillText(lb,M.l-8,py); });
+    ctx.globalAlpha=1; ctx.fillStyle=C.ink; ctx.font="600 11px ui-monospace,Menlo,monospace";
+    ctx.textAlign="center"; ctx.textBaseline="bottom"; ctx.fillText(AX[axX.value].label,(M.l+W-M.r)/2,H-6);
+    ctx.save(); ctx.translate(14,(M.t+H-M.b)/2); ctx.rotate(-Math.PI/2);
+    ctx.textBaseline="top"; ctx.fillText(AX[axY.value].label,0,0); ctx.restore();
+
+    const vis=P.filter(p=>p.vis);
+    vis.forEach(p=>{
+      ctx.globalAlpha = (hover>=0 && p.i!==hover) ? 0.28 : 1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,rOf(p.words),0,7);
+      ctx.fillStyle = p.added?C.accent:tribeCol(p.tribe); ctx.fill();
+      ctx.lineWidth=1.2; ctx.strokeStyle = p.i===hover?C.ink:C.paper; ctx.stroke();
+    });
+    ctx.globalAlpha=1; ctx.font="600 10px ui-monospace,Menlo,monospace"; ctx.textAlign="left"; ctx.textBaseline="middle";
+    vis.forEach(p=>{
+      if(!(p.base||p.added||p.i===hover)) return;
+      const tx=p.x+rOf(p.words)+4, ty=p.y;
+      ctx.lineWidth=3; ctx.strokeStyle=C.paper; ctx.strokeText(p.vendor,tx,ty);
+      ctx.fillStyle = p.added?C.accent:C.ink; ctx.fillText(p.vendor,tx,ty);
+    });
     ctx.globalAlpha=1;
   }
+  function render(){ compute(); draw(); }
 
-  function loop(){
-    if(!reduce && (energy>0.02 || drag>=0 || mode==="map")) step();
-    draw();
-    raf = requestAnimationFrame(loop);
-  }
-  function kick(){ energy=Math.max(energy,1); if(!raf) loop(); }
-
-  function pick(mx,my){
-    let best=-1, bd=1e9;
-    for(let i=0;i<P.length;i++){ const p=P[i]; const d=(p.x-mx)**2+(p.y-my)**2;
-      if(d<bd && d<(p.r+6)**2){ bd=d; best=i; } }
-    return best;
-  }
+  function pickAt(mx,my){ let best=-1,bd=1e9;
+    P.forEach(p=>{ if(!p.vis) return; const d=(p.x-mx)**2+(p.y-my)**2, r=rOf(p.words)+6;
+      if(d<bd&&d<r*r){bd=d;best=p.i;} }); return best; }
   function showTip(i){
-    const p=P[i], n=N[i];
-    tip.hidden=false;
-    tip.innerHTML = `<b>${n.model}</b><br>${n.vendor} · ${fmt(n.words)} words`+
-      `<span class="cz">closest cousin ↝ <b>${n.cousin} · ${n.cousin_vendor}</b><br>`+
-      `${Math.round(n.cousin_sim*100)}% shared vocabulary</span>`;
-    tip.style.left=p.x+"px"; tip.style.top=(p.y-p.r-6)+"px";
+    const p=P.find(q=>q.i===i); if(!p) return; tip.hidden=false;
+    const xl=AX[axX.value], yl=AX[axY.value];
+    const val=(ax)=>{ const v=ax.get(p); if(v==null) return "—"; return ax.date?(p.dateStr||"?"):fmt(Math.round(v*10)/10); };
+    tip.innerHTML=`<b>${p.model}</b><br>${p.vendor}`+
+      `<span class="cz">${xl.label}: <b>${val(xl)}</b><br>${yl.label}: <b>${val(yl)}</b><br>`+
+      `closest cousin ↝ ${p.cousin} · ${p.cousinV} (${Math.round(p.cousinSim*100)}%)</span>`;
+    tip.style.left=p.x+"px"; tip.style.top=(p.y-rOf(p.words)-6)+"px";
   }
-  function pos(ev){ const b=cv.getBoundingClientRect(); const t=ev.touches?ev.touches[0]:ev;
-    return [t.clientX-b.left, t.clientY-b.top]; }
+  function pos(ev){ const b=cv.getBoundingClientRect(); const t=ev.touches?ev.touches[0]:ev; return [t.clientX-b.left,t.clientY-b.top]; }
 
-  cv.addEventListener("mousemove",ev=>{
-    const [mx,my]=pos(ev);
-    if(drag>=0){ P[drag].x=mx; P[drag].y=my; P[drag].vx=P[drag].vy=0; kick(); showTip(drag); return; }
-    const h=pick(mx,my);
-    if(h!==hover){ hover=h; if(h>=0) showTip(h); else tip.hidden=true; }
-  });
-  cv.addEventListener("mousedown",ev=>{ const [mx,my]=pos(ev); drag=pick(mx,my); if(drag>=0){hover=drag; kick();} });
-  window.addEventListener("mouseup",()=>{ drag=-1; });
-  cv.addEventListener("mouseleave",()=>{ if(drag<0){hover=-1; tip.hidden=true;} });
-  // touch
-  cv.addEventListener("touchstart",ev=>{ const [mx,my]=pos(ev); const h=pick(mx,my); if(h>=0){drag=h;hover=h;showTip(h);kick();ev.preventDefault();} },{passive:false});
-  cv.addEventListener("touchmove",ev=>{ if(drag>=0){ const [mx,my]=pos(ev); P[drag].x=mx;P[drag].y=my;P[drag].vx=P[drag].vy=0; showTip(drag); kick(); ev.preventDefault(); } },{passive:false});
-  cv.addEventListener("touchend",()=>{ drag=-1; });
+  cv.addEventListener("mousemove",ev=>{ const [mx,my]=pos(ev); const h=pickAt(mx,my);
+    if(h!==hover){ hover=h; draw(); if(h>=0) showTip(h); else tip.hidden=true; } });
+  cv.addEventListener("mouseleave",()=>{ hover=-1; tip.hidden=true; draw(); });
+  cv.addEventListener("touchstart",ev=>{ const [mx,my]=pos(ev); const h=pickAt(mx,my);
+    if(h>=0){ hover=h; draw(); showTip(h); ev.preventDefault(); } },{passive:false});
 
-  function setMode(m){
-    mode=m; $("#viewWeb").setAttribute("aria-pressed", m==="web");
-    $("#viewMap").setAttribute("aria-pressed", m==="map"); hover=-1; tip.hidden=true; kick();
-  }
-  $("#viewWeb").addEventListener("click",()=>setMode("web"));
-  $("#viewMap").addEventListener("click",()=>setMode("map"));
+  axX.addEventListener("change",()=>{ hover=-1; tip.hidden=true; render(); });
+  axY.addEventListener("change",()=>{ hover=-1; tip.hidden=true; render(); });
+  $("#dotSearch").addEventListener("input",e=>{ query=e.target.value; hover=-1; tip.hidden=true; render(); });
 
-  readColors();
-  matchMedia("(prefers-color-scheme:dark)").addEventListener?.("change",readColors);
-  new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+  function resize(){ W=cv.clientWidth; H=cv.clientHeight; cv.width=W*DPR; cv.height=H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0); render(); }
+
+  readColors(); legend();
+  matchMedia("(prefers-color-scheme:dark)").addEventListener?.("change",()=>{readColors();draw();});
+  new MutationObserver(()=>{readColors();draw();}).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
   window.addEventListener("resize",resize);
   resize();
 })();

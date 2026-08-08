@@ -167,14 +167,11 @@ table.matrix tbody tr:hover th{color:var(--accent-ink)}
 .doc .vtag{width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:7px; vertical-align:1px}
 .empty{color:var(--muted); font-family:var(--font-mono); font-size:13px; padding:20px 4px}
 
-/* ---------- similarity map ---------- */
-.map-wrap{position:relative; margin-top:20px; border:1px solid var(--line); border-radius:12px; background:var(--paper); background-image:radial-gradient(var(--line) 1px,transparent 1px); background-size:26px 26px; overflow:hidden}
-svg#map{display:block; width:100%; height:auto; aspect-ratio:1/1; touch-action:none}
-svg#map circle.pt{cursor:pointer; transition:opacity .15s}
-svg#map.dim circle.pt{opacity:.22}
-svg#map circle.pt.on{opacity:1}
-svg#map circle.pt.cousin{opacity:1}
-svg#map line.link{stroke:var(--ink); stroke-width:2; stroke-dasharray:5 5; opacity:.75}
+/* ---------- similarity map (canvas) ---------- */
+.map-wrap{position:relative; margin-top:16px; border:1px solid var(--line); border-radius:12px; background:var(--paper); background-image:radial-gradient(var(--line) 1px,transparent 1px); background-size:26px 26px; overflow:hidden}
+canvas#map{display:block; width:100%; height:560px; touch-action:none; cursor:grab}
+canvas#map:active{cursor:grabbing}
+@media(max-width:560px){canvas#map{height:440px}}
 .map-tip{
   position:absolute; pointer-events:none; z-index:5; max-width:230px;
   background:var(--ink); color:var(--bg); font-family:var(--font-mono); font-size:11.5px; line-height:1.5;
@@ -203,6 +200,24 @@ pre.diff .add{background:var(--diff-add-bg); color:var(--diff-add-ink); border-l
 pre.diff .del{background:var(--diff-del-bg); color:var(--accent-ink); border-left-color:var(--accent)}
 pre.diff .gap{text-align:center; color:var(--muted); opacity:.5; padding:3px 0; user-select:none}
 
+/* ---------- counter-spells (jailbreaks) ---------- */
+.jb-grid{display:grid; grid-template-columns:1fr 260px; gap:22px; margin-top:20px; align-items:start}
+@media(max-width:720px){.jb-grid{grid-template-columns:1fr}}
+.jb-tech{display:flex; flex-direction:column; gap:12px}
+.jb-row{display:grid; grid-template-columns:170px 1fr auto; align-items:center; gap:12px}
+.jb-row .nm{font-family:var(--font-mono); font-size:12px; color:var(--ink); text-align:right; line-height:1.2}
+.jb-row .nm small{display:block; color:var(--muted); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase}
+.jb-row .track{height:26px; background:var(--paper-2); border:1px solid var(--line); border-radius:5px; overflow:hidden}
+.jb-row .fill{height:100%; width:0; background:var(--accent); transition:width 1s cubic-bezier(.2,.8,.2,1); display:flex; align-items:center; justify-content:flex-end; padding-right:8px}
+.jb-row .fill span{font-family:var(--font-mono); font-size:11px; color:var(--paper); font-weight:700; opacity:0; transition:opacity .4s .6s}
+.jb-row .files{font-family:var(--font-mono); font-size:11px; color:var(--muted); min-width:64px; text-align:right}
+@media(max-width:560px){.jb-row{grid-template-columns:118px 1fr auto}}
+.jb-card{border:1px solid var(--line); border-radius:10px; background:var(--paper); padding:18px 20px}
+.jb-card .jb-k{font-family:var(--font-mono); font-size:1.9rem; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; color:var(--accent-ink)}
+.jb-card .jb-l{font-family:var(--font-mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:6px 0 16px}
+.jb-card .jb-l:last-child{margin-bottom:0}
+.jb-foot{font-family:var(--font-mono); font-size:10.5px; line-height:1.6; color:var(--muted); margin:14px 2px 0}
+
 /* ---------- footer ---------- */
 footer{border-top:1px solid var(--line); margin-top:40px; padding:30px 0 60px; color:var(--muted); font-size:13px}
 footer .method{font-family:var(--font-mono); font-size:11.5px; line-height:1.7; letter-spacing:.02em}
@@ -211,15 +226,15 @@ footer .warn{color:var(--accent-ink); font-weight:600}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
-<div class="classbar">FILE // <b>DECLASSIFIED</b> // SOURCE: CL4R1T4S ARCHIVE BY PLINY (@ELDER-PLINIUS) // HANDLING: TRANSPARENCY</div>
+<div class="classbar">FILE // <b>DECLASSIFIED</b> // SOURCES: L1B3RT4S + CL4R1T4S (PLINY) &amp; LEAKED-SYSTEM-PROMPTS (JUJUMILK3) // HANDLING: TRANSPARENCY</div>
 
 <div class="wrap">
   <header class="hero">
     <div class="stamp">Leaked</div>
     <div class="filetag"><span class="dot"></span>DOSSIER 001 &nbsp; the instructions they never show you</div>
     <h1>The Secret<br><span class="red">Rulebooks</span> of the Machines</h1>
-    <p class="dek">Every AI chatbot is handed a hidden list of rules before it ever talks to you — who it is, what it must never say. Here are <span id="d-n"></span> of them, from <span id="d-v"></span> companies, pulled apart and laid side by side.</p>
-    <p class="credit">Source data: the <a href="https://github.com/elder-plinius/CL4R1T4S" target="_blank" rel="noopener">CL4R1T4S</a> archive, collected &amp; maintained by <a href="https://github.com/elder-plinius" target="_blank" rel="noopener"><strong>Pliny · @elder-plinius</strong></a>. This project just visualizes his public collection.</p>
+    <p class="dek">Every AI chatbot is handed a hidden list of rules before it ever talks to you — who it is, what it must never say. Here are <span id="d-n"></span> of them, from <span id="d-v"></span> companies, pulled apart and laid side by side — then flipped over to look at the <em>jailbreaks</em> built to break them.</p>
+    <p class="credit">Source data: the <a href="https://github.com/elder-plinius/CL4R1T4S" target="_blank" rel="noopener">CL4R1T4S</a> &amp; <a href="https://github.com/elder-plinius/L1B3RT4S" target="_blank" rel="noopener">L1B3RT4S</a> archives by <a href="https://github.com/elder-plinius" target="_blank" rel="noopener"><strong>Pliny · @elder-plinius</strong></a>, plus <a href="https://github.com/jujumilk3/leaked-system-prompts" target="_blank" rel="noopener">leaked-system-prompts</a> by <a href="https://github.com/jujumilk3" target="_blank" rel="noopener"><strong>@jujumilk3</strong></a>. This project just visualizes their public collections.</p>
 
     <div class="stats" id="stats"></div>
   </header>
@@ -227,7 +242,7 @@ footer .warn{color:var(--accent-ink); font-weight:600}
   <section id="sec-matrix">
     <span class="exhibit"><span class="x">▓</span> EXHIBIT A</span>
     <h2>Who Says No To What</h2>
-    <p class="note">Each cell counts how often a company's rulebooks bring up a touchy subject. Darker = more airtime. It's a map of what each lab is nervous about — not a scorecard of who's "safer."</p>
+    <p class="note">Each cell counts how often a company's rulebooks bring up a touchy subject. Darker = more airtime. It's a map of what each lab is nervous about — not a scorecard of who's "safer." <em>Top 24 companies by length shown; all <span id="mx-all"></span> are in the archive.</em></p>
     <div class="legend">
       <span><i class="t-chat"></i>Frontier chat</span>
       <span><i class="t-code"></i>Coding agent</span>
@@ -239,7 +254,7 @@ footer .warn{color:var(--accent-ink); font-weight:600}
   <section id="sec-bars">
     <span class="exhibit"><span class="x">▓</span> EXHIBIT B</span>
     <h2>Who Writes The Most</h2>
-    <p class="note">Some labs hand their AI a sticky note. Others hand it a novel. Toggle between sheer length and <em>bossiness</em> — how many "must / never / always" commands they cram in per 1,000 words.</p>
+    <p class="note">Some labs hand their AI a sticky note. Others hand it a novel. Toggle between sheer length and <em>bossiness</em> — how many "must / never / always" commands they cram in per 1,000 words. <em>Top 24 shown.</em></p>
     <div class="controls">
       <button class="btn" data-metric="avg_words" aria-pressed="true">Length (words)</button>
       <button class="btn" data-metric="avg_imperative" aria-pressed="false">Bossiness (cmds / 1k)</button>
@@ -250,15 +265,19 @@ footer .warn{color:var(--accent-ink); font-weight:600}
   <section id="sec-map">
     <span class="exhibit"><span class="x">▓</span> EXHIBIT C</span>
     <h2>Who Copied Whose Homework</h2>
-    <p class="note">Every rulebook plotted by the <em>words it uses</em> — close dots share vocabulary. Hover a dot to see its nearest cousin from a <strong>different company</strong>. Watch the coding agents pile into one corner: they didn't write these prompts from scratch.</p>
+    <p class="note">All <span id="m-n"></span> rulebooks placed by the <em>words they use</em>. In <strong>Web</strong> view, glowing lines link the most-similar prompts and you can drag nodes around; in <strong>Map</strong> view they settle by overall similarity. Hover any node for its closest cousin from a <strong>different company</strong>.</p>
+    <div class="controls">
+      <button class="btn" id="viewWeb" aria-pressed="true">Web · force graph</button>
+      <button class="btn" id="viewMap" aria-pressed="false">Map · similarity</button>
+    </div>
     <div class="legend">
       <span><i class="t-chat"></i>Frontier chat</span>
       <span><i class="t-code"></i>Coding agent</span>
       <span><i class="t-svc"></i>Service / other</span>
-      <span style="color:var(--muted)">dot size = length · line = closest cross-company match on hover</span>
+      <span style="color:var(--muted)">node size = length · lines = shared vocabulary</span>
     </div>
     <div class="map-wrap">
-      <svg id="map" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Scatter plot of rulebook similarity"></svg>
+      <canvas id="map" role="img" aria-label="Interactive similarity graph of rulebooks"></canvas>
       <div class="map-tip" id="map-tip" hidden></div>
     </div>
   </section>
@@ -285,10 +304,27 @@ footer .warn{color:var(--accent-ink); font-weight:600}
     <div class="diff-scroll"><pre class="diff" id="diffOut"></pre></div>
   </section>
 
+  <section id="sec-jb">
+    <span class="exhibit"><span class="x">▓</span> EXHIBIT F</span>
+    <h2>The Counter-Spells</h2>
+    <p class="note">Flip the dossier over. Everything above is the <em>defense</em> — the rulebooks. This is the <strong>attack</strong>: Pliny's <a href="https://github.com/elder-plinius/L1B3RT4S" target="_blank" rel="noopener">L1B3RT4S</a> jailbreak archive, read only in the aggregate — which <em>techniques</em> show up most across <span id="jb-files"></span> files targeting <span id="jb-targets"></span> models. <strong>No exploit text is reproduced here</strong> — just the shape of the attack surface.</p>
+    <div class="jb-grid">
+      <div class="jb-tech" id="jbTech"></div>
+      <div class="jb-side">
+        <div class="jb-card">
+          <div class="jb-k" id="jb-k1"></div><div class="jb-l">jailbreak files</div>
+          <div class="jb-k" id="jb-k2"></div><div class="jb-l">models targeted</div>
+          <div class="jb-k" id="jb-k3"></div><div class="jb-l">the go-to move</div>
+        </div>
+        <p class="jb-foot">Read as a <em>taxonomy</em>, not a toolkit — counts of technique keywords, aggregated across the collection.</p>
+      </div>
+    </div>
+  </section>
+
   <footer>
     <p class="method">
-      METHOD // Text pulled from the public <a href="https://github.com/elder-plinius/CL4R1T4S" target="_blank" rel="noopener">CL4R1T4S</a> archive of leaked / reverse-engineered system prompts. Category counts are keyword mentions, so a longer rulebook naturally mentions more of everything — read the heat as <em>emphasis</em>, not policy. Nothing here is private: these are the instructions, not the training data.<br><br>
-      <span class="warn">NB //</span> One file in this archive contains a prompt-injection payload aimed at any AI that reads it. The dataset about AI manipulation is, fittingly, also an attempt at it. We parsed for word counts only. 🫡
+      METHOD // Rulebooks merged from <a href="https://github.com/elder-plinius/CL4R1T4S" target="_blank" rel="noopener">CL4R1T4S</a> (Pliny) and <a href="https://github.com/jujumilk3/leaked-system-prompts" target="_blank" rel="noopener">leaked-system-prompts</a> (jujumilk3), de-duplicated by content. Similarity is TF-IDF over word bigrams + character n-grams (not neural embeddings). Category and technique tallies are keyword mentions — read the heat as <em>emphasis</em>, not policy or capability. These are instructions, not training data; the L1B3RT4S section is aggregated counts only, never exploit text.<br><br>
+      <span class="warn">NB //</span> The prompt archives themselves contain injection payloads aimed at any AI that reads them — the corpus about manipulating models is, fittingly, also an attempt at it. We parsed for tallies only. 🫡
     </p>
   </footer>
 </div>
@@ -299,10 +335,11 @@ const TCOLOR = {"Frontier chat":"var(--t-chat)","Coding agent":"var(--t-code)","
 const $ = s => document.querySelector(s);
 
 /* stats */
+const fmt = n => n.toLocaleString("en-US");
 $("#d-n").textContent = DATA.stats.n_prompts;
 $("#d-v").textContent = DATA.stats.n_vendors;
 $("#a-n").textContent = DATA.stats.n_prompts;
-const fmt = n => n.toLocaleString("en-US");
+$("#m-n").textContent = DATA.stats.n_prompts;
 $("#stats").innerHTML = [
   [DATA.stats.n_vendors,"companies"],
   [DATA.stats.n_prompts,"rulebooks"],
@@ -311,13 +348,14 @@ $("#stats").innerHTML = [
 ].map(([n,l])=>`<div class="stat"><div class="n">${typeof n==="number"?fmt(n):n}</div><div class="l">${l}</div></div>`).join("");
 
 /* ---- ban matrix ---- */
+const TOPN = 24;   // keep the grid legible; full set lives in the archive
 (function(){
   const cats = DATA.categories;
-  // column max for normalization
-  const colMax = {};
-  cats.forEach(c => colMax[c] = Math.max(1, ...DATA.vendors.map(v=>v.categories[c])));
   const order = ["Frontier chat","Coding agent","Service / other"];
-  const vendors = [...DATA.vendors].sort((a,b)=>
+  const top = [...DATA.vendors].sort((a,b)=>b.total_words-a.total_words).slice(0, TOPN);
+  const colMax = {};
+  cats.forEach(c => colMax[c] = Math.max(1, ...top.map(v=>v.categories[c])));
+  const vendors = top.sort((a,b)=>
     order.indexOf(a.tribe)-order.indexOf(b.tribe) || b.total_words-a.total_words);
   let html = "<thead><tr><th class='corner'>Company</th>";
   cats.forEach(c => html += `<th>${c.replace(" / ","<br>/ ")}</th>`);
@@ -339,7 +377,7 @@ $("#stats").innerHTML = [
 const bars = $("#bars");
 function drawBars(metric){
   const unit = metric==="avg_words" ? "" : "/1k";
-  const sorted = [...DATA.vendors].sort((a,b)=>b[metric]-a[metric]);
+  const sorted = [...DATA.vendors].sort((a,b)=>b[metric]-a[metric]).slice(0, TOPN);
   const max = Math.max(...sorted.map(v=>v[metric]));
   bars.innerHTML = sorted.map(v=>`
     <div class="bar">
@@ -359,8 +397,13 @@ document.querySelectorAll(".controls .btn").forEach(b=>{
 drawBars("avg_words");
 
 /* ---- archive ---- */
+$("#mx-all").textContent = DATA.stats.n_vendors;
 const archive = $("#archive");
-const REPO = "https://github.com/elder-plinius/CL4R1T4S/blob/main/";
+const REPO = {
+  "CL4R1T4S":  "https://github.com/elder-plinius/CL4R1T4S/blob/main/",
+  "jujumilk3": "https://github.com/jujumilk3/leaked-system-prompts/blob/main/",
+};
+const SRCLABEL = {"CL4R1T4S":"Pliny", "jujumilk3":"jujumilk3"};
 function drawArchive(q=""){
   q = q.trim().toLowerCase();
   const rows = DATA.prompts.filter(p =>
@@ -368,10 +411,11 @@ function drawArchive(q=""){
   if(!rows.length){ archive.innerHTML = `<div class="empty">No files match “${q}”.</div>`; return; }
   archive.innerHTML = rows.map(p=>{
     const date = p.date ? p.date : "date unknown";
-    return `<a class="doc" href="${REPO}${encodeURI(p.file)}" target="_blank" rel="noopener">
+    const href = (REPO[p.source]||"") + encodeURI(p.file);
+    return `<a class="doc" href="${href}" target="_blank" rel="noopener">
       <div class="meta">
         <div class="model"><span class="vtag" style="background:${TCOLOR[p.tribe]}"></span>${p.model}</div>
-        <div class="sub">${p.vendor} · <span class="redact">${date}</span></div>
+        <div class="sub">${p.vendor} · <span class="redact">${date}</span> · via ${SRCLABEL[p.source]||p.source}</div>
       </div>
       <div class="wc">${fmt(p.words)}<small>words</small></div>
     </a>`;
@@ -380,47 +424,150 @@ function drawArchive(q=""){
 $("#search").addEventListener("input", e=>drawArchive(e.target.value));
 drawArchive();
 
-/* ---- similarity map ---- */
+/* ---- similarity map: interactive canvas force-web ---- */
 (function(){
-  const svg = $("#map"), tip = $("#map-tip"), wrap = svg.parentElement;
-  const NS = "http://www.w3.org/2000/svg";
-  const pts = DATA.map, PAD = 70, SZ = 1000;
-  const sx = x => PAD + (x+1)/2 * (SZ-2*PAD);
-  const sy = y => PAD + (1-(y+1)/2) * (SZ-2*PAD);   // flip y for screen
-  const rOf = w => 7 + Math.sqrt(w)/9;              // area-ish scaling
-  const col = t => TCOLOR[t];
-  const line = document.createElementNS(NS,"line");
-  line.setAttribute("class","link"); line.style.display="none"; svg.appendChild(line);
-  const nodes = pts.map((p,i)=>{
-    const c = document.createElementNS(NS,"circle");
-    c.setAttribute("class","pt"); c.setAttribute("cx",sx(p.x)); c.setAttribute("cy",sy(p.y));
-    c.setAttribute("r",rOf(p.words)); c.setAttribute("fill",col(p.tribe));
-    c.setAttribute("fill-opacity","0.82"); c.setAttribute("stroke","var(--paper)"); c.setAttribute("stroke-width","1.5");
-    c.dataset.i = i; svg.appendChild(c); return c;
-  });
-  function enter(i){
-    const p = pts[i], j = p.cousin_i;
-    svg.classList.add("dim");
-    nodes[i].classList.add("on"); nodes[j] && nodes[j].classList.add("cousin");
-    if(nodes[j]){
-      line.setAttribute("x1",sx(p.x)); line.setAttribute("y1",sy(p.y));
-      line.setAttribute("x2",sx(pts[j].x)); line.setAttribute("y2",sy(pts[j].y));
-      line.style.display="";
-    }
-    tip.hidden=false;
-    tip.innerHTML = `<b>${p.model}</b><br>${p.vendor} · ${fmt(p.words)} words`+
-      `<span class="cz">closest cousin ↝ <b>${p.cousin} · ${p.cousin_vendor}</b><br>${Math.round(p.cousin_sim*100)}% shared vocabulary</span>`;
-    const box = svg.getBoundingClientRect();
-    tip.style.left = (sx(p.x)/SZ*box.width) + "px";
-    tip.style.top  = (sy(p.y)/SZ*box.height) + "px";
+  const cv = $("#map"), tip = $("#map-tip"), ctx = cv.getContext("2d");
+  const N = DATA.map.nodes, E = DATA.map.edges;
+  let W = 0, H = 0, DPR = Math.min(2, window.devicePixelRatio || 1);
+  let mode = "web", hover = -1, drag = -1, raf = 0, energy = 1;
+  const reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+  // resolve theme colors (canvas can't use CSS vars directly)
+  let C = {};
+  function readColors(){
+    const g = getComputedStyle(document.documentElement);
+    const v = n => g.getPropertyValue(n).trim();
+    C = {chat:v("--t-chat"), code:v("--t-code"), svc:v("--t-svc"),
+         ink:v("--ink"), paper:v("--paper"), line:v("--line-strong"), accent:v("--accent")};
   }
-  function leave(){ svg.classList.remove("dim"); line.style.display="none"; tip.hidden=true;
-    nodes.forEach(n=>n.classList.remove("on","cousin")); }
-  nodes.forEach(n=>{
-    n.addEventListener("mouseenter",()=>enter(+n.dataset.i));
-    n.addEventListener("click",()=>enter(+n.dataset.i));
+  const tribeCol = t => t==="Coding agent"?C.code : t==="Service / other"?C.svc : C.chat;
+  const rOf = w => 3.4 + Math.sqrt(w)/13;
+
+  // simulation state, seeded from MDS coords
+  const P = N.map(n => ({x:0,y:0,vx:0,vy:0,r:rOf(n.words), sx:n.x, sy:n.y}));
+  function seed(){
+    const pad = 46, sc = Math.min(W,H)/2 - pad, cx = W/2, cy = H/2;
+    P.forEach((p,i)=>{ p.x = cx + N[i].x*sc; p.y = cy - N[i].y*sc; p.vx=p.vy=0; });
+  }
+  function resize(){
+    W = cv.clientWidth; H = cv.clientHeight;
+    cv.width = W*DPR; cv.height = H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    seed(); energy = 1; kick();
+  }
+
+  function step(){
+    const cx=W/2, cy=H/2, k=0.0016, rep=520;
+    for(let i=0;i<P.length;i++){
+      const a=P[i]; if(i===drag) continue;
+      a.vx += (cx-a.x)*k; a.vy += (cy-a.y)*k;              // gravity to center
+    }
+    for(let i=0;i<P.length;i++){                            // repulsion
+      const a=P[i];
+      for(let j=i+1;j<P.length;j++){
+        const b=P[j]; let dx=a.x-b.x, dy=a.y-b.y; let d2=dx*dx+dy*dy||0.01;
+        if(d2>26000) continue;
+        const f=rep/d2, d=Math.sqrt(d2), fx=dx/d*f, fy=dy/d*f;
+        if(i!==drag){a.vx+=fx; a.vy+=fy;} if(j!==drag){b.vx-=fx; b.vy-=fy;}
+      }
+    }
+    for(const e of E){                                      // springs
+      const a=P[e[0]], b=P[e[1]]; const rest=48+(1-e[2])*120;
+      let dx=b.x-a.x, dy=b.y-a.y; const d=Math.hypot(dx,dy)||0.01;
+      const f=(d-rest)*0.02*(0.4+e[2]); const fx=dx/d*f, fy=dy/d*f;
+      if(e[0]!==drag){a.vx+=fx; a.vy+=fy;} if(e[1]!==drag){b.vx-=fx; b.vy-=fy;}
+    }
+    let ke=0;
+    for(let i=0;i<P.length;i++){
+      const p=P[i]; if(i===drag) continue;
+      if(mode==="map"){ p.x+=(cx+N[i].sx*(Math.min(W,H)/2-46)-p.x)*0.12;
+                        p.y+=(cy-N[i].sy*(Math.min(W,H)/2-46)-p.y)*0.12; }
+      else { p.vx*=0.86; p.vy*=0.86; p.x+=p.vx; p.y+=p.vy; ke+=p.vx*p.vx+p.vy*p.vy; }
+      p.x=Math.max(p.r+2,Math.min(W-p.r-2,p.x)); p.y=Math.max(p.r+2,Math.min(H-p.r-2,p.y));
+    }
+    energy = mode==="map" ? energy*0.9 : ke/P.length;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const cousin = hover>=0 ? N[hover].cousin_i : -1;
+    // edges
+    ctx.lineWidth=1;
+    for(const e of E){
+      const a=P[e[0]], b=P[e[1]];
+      const hot = hover>=0 && (e[0]===hover||e[1]===hover);
+      ctx.strokeStyle = hot ? C.accent : C.line;
+      ctx.globalAlpha = hover>=0 ? (hot?0.9:0.06) : (0.12+e[2]*0.4);
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    }
+    // cousin link on hover
+    if(hover>=0 && cousin>=0){
+      ctx.globalAlpha=0.9; ctx.strokeStyle=C.ink; ctx.lineWidth=1.6; ctx.setLineDash([5,4]);
+      ctx.beginPath(); ctx.moveTo(P[hover].x,P[hover].y); ctx.lineTo(P[cousin].x,P[cousin].y); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // nodes
+    for(let i=0;i<P.length;i++){
+      const p=P[i], n=N[i];
+      const faded = hover>=0 && i!==hover && i!==cousin &&
+                    !(mode==="web" && E.some(e=>(e[0]===hover&&e[1]===i)||(e[1]===hover&&e[0]===i)));
+      ctx.globalAlpha = faded ? 0.18 : 1;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fillStyle=tribeCol(n.tribe); ctx.fill();
+      if(i===hover||i===cousin){ ctx.lineWidth=2; ctx.strokeStyle=i===hover?C.ink:C.accent; ctx.stroke(); }
+      else { ctx.lineWidth=1; ctx.strokeStyle=C.paper; ctx.stroke(); }
+    }
+    ctx.globalAlpha=1;
+  }
+
+  function loop(){
+    if(!reduce && (energy>0.02 || drag>=0 || mode==="map")) step();
+    draw();
+    raf = requestAnimationFrame(loop);
+  }
+  function kick(){ energy=Math.max(energy,1); if(!raf) loop(); }
+
+  function pick(mx,my){
+    let best=-1, bd=1e9;
+    for(let i=0;i<P.length;i++){ const p=P[i]; const d=(p.x-mx)**2+(p.y-my)**2;
+      if(d<bd && d<(p.r+6)**2){ bd=d; best=i; } }
+    return best;
+  }
+  function showTip(i){
+    const p=P[i], n=N[i];
+    tip.hidden=false;
+    tip.innerHTML = `<b>${n.model}</b><br>${n.vendor} · ${fmt(n.words)} words`+
+      `<span class="cz">closest cousin ↝ <b>${n.cousin} · ${n.cousin_vendor}</b><br>`+
+      `${Math.round(n.cousin_sim*100)}% shared vocabulary</span>`;
+    tip.style.left=p.x+"px"; tip.style.top=(p.y-p.r-6)+"px";
+  }
+  function pos(ev){ const b=cv.getBoundingClientRect(); const t=ev.touches?ev.touches[0]:ev;
+    return [t.clientX-b.left, t.clientY-b.top]; }
+
+  cv.addEventListener("mousemove",ev=>{
+    const [mx,my]=pos(ev);
+    if(drag>=0){ P[drag].x=mx; P[drag].y=my; P[drag].vx=P[drag].vy=0; kick(); showTip(drag); return; }
+    const h=pick(mx,my);
+    if(h!==hover){ hover=h; if(h>=0) showTip(h); else tip.hidden=true; }
   });
-  svg.addEventListener("mouseleave",leave);
+  cv.addEventListener("mousedown",ev=>{ const [mx,my]=pos(ev); drag=pick(mx,my); if(drag>=0){hover=drag; kick();} });
+  window.addEventListener("mouseup",()=>{ drag=-1; });
+  cv.addEventListener("mouseleave",()=>{ if(drag<0){hover=-1; tip.hidden=true;} });
+  // touch
+  cv.addEventListener("touchstart",ev=>{ const [mx,my]=pos(ev); const h=pick(mx,my); if(h>=0){drag=h;hover=h;showTip(h);kick();ev.preventDefault();} },{passive:false});
+  cv.addEventListener("touchmove",ev=>{ if(drag>=0){ const [mx,my]=pos(ev); P[drag].x=mx;P[drag].y=my;P[drag].vx=P[drag].vy=0; showTip(drag); kick(); ev.preventDefault(); } },{passive:false});
+  cv.addEventListener("touchend",()=>{ drag=-1; });
+
+  function setMode(m){
+    mode=m; $("#viewWeb").setAttribute("aria-pressed", m==="web");
+    $("#viewMap").setAttribute("aria-pressed", m==="map"); hover=-1; tip.hidden=true; kick();
+  }
+  $("#viewWeb").addEventListener("click",()=>setMode("web"));
+  $("#viewMap").addEventListener("click",()=>setMode("map"));
+
+  readColors();
+  matchMedia("(prefers-color-scheme:dark)").addEventListener?.("change",readColors);
+  new MutationObserver(readColors).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+  window.addEventListener("resize",resize);
+  resize();
 })();
 
 /* ---- diff machine ---- */
@@ -435,14 +582,17 @@ const TEXTS = __TEXTS__;
     Object.keys(byVendor).sort().forEach(v=>{
       const og=document.createElement("optgroup"); og.label=v;
       byVendor[v].forEach(p=>{
-        const o=document.createElement("option"); o.value=p.file; o.textContent=p.model; og.appendChild(o);
+        const o=document.createElement("option"); o.value=p.uid; o.textContent=p.model; og.appendChild(o);
       });
       sel.appendChild(og);
     });
   }
   opts(A); opts(B);
-  const pick=(sel,file)=>{ if([...sel.options].some(o=>o.value===file)) sel.value=file; };
-  pick(A,"ANTHROPIC/Claude_Sonnet_3.5.md"); pick(B,"ANTHROPIC/OPUS-5.md");
+  // default: an old Claude vs a new one (found by model name, robust to data changes)
+  const find = re => (DATA.prompts.find(p=>re.test(p.model)) || {}).uid;
+  const setSel = (sel,uid)=>{ if(uid && [...sel.options].some(o=>o.value===uid)) sel.value=uid; };
+  setSel(A, find(/sonnet.?3\.5/i) || find(/claude.?3/i));
+  setSel(B, find(/opus.?5/i) || find(/opus.?4/i));
 
   const norm = t => t.replace(/\r/g,"").split("\n").map(l=>l.replace(/\s+$/,""));
   function lcsDiff(a,b){
@@ -494,5 +644,24 @@ const TEXTS = __TEXTS__;
   A.addEventListener("change",render); B.addEventListener("change",render);
   onlyBtn.addEventListener("click",()=>{ onlyChanges=!onlyChanges; onlyBtn.setAttribute("aria-pressed",onlyChanges); render(); });
   render();
+})();
+
+/* ---- counter-spells (Exhibit F) ---- */
+(function(){
+  const jb = DATA.jailbreaks; if(!jb) return;
+  $("#jb-files").textContent = jb.stats.n_files;
+  $("#jb-targets").textContent = jb.stats.n_targets;
+  $("#jb-k1").textContent = jb.stats.n_files;
+  $("#jb-k2").textContent = jb.stats.n_targets;
+  $("#jb-k3").textContent = jb.techniques[0].name.split(" / ")[0];
+  const max = Math.max(...jb.techniques.map(t=>t.hits));
+  $("#jbTech").innerHTML = jb.techniques.map(t=>`
+    <div class="jb-row">
+      <div class="nm">${t.name}<small>${t.docs} of ${jb.stats.n_files} files</small></div>
+      <div class="track"><div class="fill" data-w="${(t.hits/max*100).toFixed(1)}"><span>${fmt(t.hits)}</span></div></div>
+      <div class="files">${fmt(t.hits)} hits</div>
+    </div>`).join("");
+  requestAnimationFrame(()=>$("#jbTech").querySelectorAll(".fill").forEach(f=>{
+    f.style.width=f.dataset.w+"%"; f.querySelector("span").style.opacity=1; }));
 })();
 </script>

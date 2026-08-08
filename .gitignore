@@ -1,5 +1,7 @@
-# the upstream archive is cloned on demand, never committed
+# upstream archives are cloned on demand, never committed
 CL4R1T4S/
+juju/
+L1B3RT4S/
 __pycache__/
 *.pyc
 .DS_Store

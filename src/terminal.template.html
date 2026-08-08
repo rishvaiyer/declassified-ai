@@ -1,0 +1,268 @@
+<title>CL4R1T4S // Declassified Terminal</title>
+<style>
+/* Single-world CRT aesthetic — deliberately dark, phosphor-green. */
+:root{
+  --bg:#060a06; --scan:#0c140c; --fg:#4dfb84; --dim:#1f8f45; --dimmer:#14622f;
+  --bright:#b9ffce; --amber:#ffc94d; --red:#ff5c57; --cyan:#5cf0ff;
+  --mono:"SF Mono","JetBrains Mono","Fira Code","Cascadia Code",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--fg);
+  font-family:var(--mono); font-size:14.5px; line-height:1.5;
+  overflow:hidden;
+}
+#crt{
+  position:fixed; inset:0; padding:22px clamp(14px,4vw,48px) 0;
+  display:flex; flex-direction:column;
+  text-shadow:0 0 6px rgba(77,251,132,.45);
+}
+/* scanlines + vignette + flicker */
+#crt::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.22) 2px 3px);
+  mix-blend-mode:multiply;
+}
+#crt::after{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:9;
+  background:radial-gradient(120% 120% at 50% 45%, transparent 55%, rgba(0,0,0,.55) 100%);
+}
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.86}94%{opacity:1}97%{opacity:.92}}
+#screen-wrap{flex:1; overflow-y:auto; overflow-x:hidden; padding-bottom:8px}
+#screen-wrap::-webkit-scrollbar{width:9px} #screen-wrap::-webkit-scrollbar-thumb{background:var(--dimmer); border-radius:6px}
+#screen{animation:flicker 7s infinite}
+.ln{white-space:pre-wrap; word-break:break-word; animation:fade .12s ease-out}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.dim{color:var(--dim)} .bright{color:var(--bright)} .amber{color:var(--amber)}
+.red{color:var(--red)} .cyan{color:var(--cyan)} .b{font-weight:700}
+a{color:var(--cyan); text-decoration:none} a:hover{text-decoration:underline}
+.chip{display:inline-block; min-width:1ch}
+pre.box{margin:0; color:var(--bright); overflow-x:auto}
+.bar{color:var(--fg)} .bar .t{color:var(--dimmer)}
+
+/* input line */
+#prompt-line{display:flex; align-items:baseline; gap:8px; padding:2px 0 20px}
+#ps1{color:var(--dim); white-space:nowrap}
+#ps1 .u{color:var(--fg)} #ps1 .p{color:var(--cyan)}
+#cmd{
+  flex:1; background:transparent; border:0; outline:0; color:var(--bright);
+  font:inherit; text-shadow:inherit; caret-color:transparent; padding:0;
+}
+#curs{width:9px; height:1.05em; background:var(--fg); display:inline-block;
+  transform:translateY(2px); animation:blink 1.05s steps(1) infinite; box-shadow:0 0 8px var(--fg)}
+@keyframes blink{50%{opacity:0}}
+.hint{color:var(--dim)}
+@media (prefers-reduced-motion:reduce){#screen,#curs,.ln,#crt::before{animation:none}}
+</style>
+
+<div id="crt">
+  <div id="screen-wrap">
+    <div id="screen"></div>
+  </div>
+  <div id="prompt-line" hidden>
+    <span id="ps1"><span class="u">operative</span>@<span class="p">declassified</span>:~$</span>
+    <span style="flex:1;position:relative;display:flex;align-items:baseline">
+      <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="terminal input">
+      <span id="curs"></span>
+    </span>
+  </div>
+</div>
+
+<script>
+const DATA = __DATA__;
+const TEXTS = __TEXTS__;
+const screen = document.getElementById("screen");
+const wrap = document.getElementById("screen-wrap");
+const line = document.getElementById("prompt-line");
+const input = document.getElementById("cmd");
+const curs = document.getElementById("curs");
+const reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+const fmt = n => n.toLocaleString("en-US");
+const esc = s => (""+s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+function print(html=""){ const d=document.createElement("div"); d.className="ln"; d.innerHTML=html; screen.appendChild(d); wrap.scrollTop=wrap.scrollHeight; return d; }
+const sleep = ms => new Promise(r=>setTimeout(r, reduce?0:ms));
+
+/* ---------- data helpers ---------- */
+const P = DATA.prompts;
+const vendors = () => { const m={}; P.forEach(p=>{ (m[p.vendor] ||= {n:0,w:0,tribe:p.tribe}); m[p.vendor].n++; m[p.vendor].w+=p.words; }); return m; };
+const REPO = {CL4R1T4S:"https://github.com/elder-plinius/CL4R1T4S/blob/main/", jujumilk3:"https://github.com/jujumilk3/leaked-system-prompts/blob/main/"};
+const findPrompts = q => { q=q.toLowerCase(); return P.filter(p=>(p.vendor+" "+p.model).toLowerCase().includes(q)); };
+const pad = (s,n) => (s+" ".repeat(n)).slice(0,n);
+function bar(frac, width=22, ch="█"){ const f=Math.round(frac*width); return `<span class="bar">${ch.repeat(f)}<span class="t">${"·".repeat(width-f)}</span></span>`; }
+
+/* ---------- commands ---------- */
+const CMDS = {};
+CMDS.help = () => {
+  print(`<span class="bright b">AVAILABLE COMMANDS</span>`);
+  const rows = [
+    ["ls","list every company (with file counts)"],
+    ["ls &lt;company&gt;","list that company's leaked prompts"],
+    ["cat &lt;name&gt;","read a system prompt  (e.g. cat opus 5)"],
+    ["search &lt;term&gt;","find prompts by model / company name"],
+    ["grep &lt;term&gt;","search INSIDE every prompt's text"],
+    ["stats","corpus overview"],
+    ["top [length|bossy|secret]","leaderboards"],
+    ["spells","jailbreak technique taxonomy (L1B3RT4S)"],
+    ["random","open a random file"],
+    ["about","what this is + credits"],
+    ["clear","wipe the screen"],
+  ];
+  rows.forEach(([c,d])=>print(`  <span class="cyan">${pad(c,26)}</span><span class="dim">${d}</span>`));
+  print(`\n<span class="dim">tip: ↑/↑ for history · Tab to autocomplete a company</span>`);
+};
+CMDS.ls = (arg) => {
+  if(!arg){
+    const v = vendors(); const names = Object.keys(v).sort((a,b)=>v[b].n-v[a].n);
+    print(`<span class="dim">${names.length} companies · ${P.length} files</span>\n`);
+    let rowHTML="";
+    names.forEach((name,idx)=>{
+      rowHTML += `<span class="cyan">${pad(name,16)}</span><span class="dim">${pad(v[name].n+"f",5)}</span>`;
+      if(idx%3===2){ print(rowHTML); rowHTML=""; }
+    });
+    if(rowHTML) print(rowHTML);
+    print(`\n<span class="dim">→ ls &lt;company&gt; to list files, cat &lt;name&gt; to read one</span>`);
+    return;
+  }
+  const rows = findPrompts(arg);
+  if(!rows.length) return print(`<span class="red">no company matches "${esc(arg)}"</span>`);
+  rows.sort((a,b)=>b.words-a.words).forEach(p=>{
+    print(`  <span class="bright">${pad(p.model,38)}</span><span class="dim">${pad(fmt(p.words)+"w",9)}${p.date||""}</span>`);
+  });
+  print(`<span class="dim">${rows.length} file(s)</span>`);
+};
+CMDS.cat = (arg) => {
+  if(!arg) return print(`<span class="red">usage: cat &lt;model or company&gt;</span>`);
+  const rows = findPrompts(arg);
+  if(!rows.length) return print(`<span class="red">no file matches "${esc(arg)}"</span>`);
+  if(rows.length>1){
+    print(`<span class="amber">${rows.length} matches — be more specific:</span>`);
+    rows.slice(0,14).forEach(p=>print(`  <span class="cyan">${pad(p.vendor,14)}</span><span class="bright">${p.model}</span>`));
+    if(rows.length>14) print(`  <span class="dim">…and ${rows.length-14} more</span>`);
+    return;
+  }
+  const p = rows[0]; const text = TEXTS[p.uid] || "(text unavailable)";
+  const lines = text.replace(/\r/g,"").split("\n");
+  print(`<span class="dim">┌─ </span><span class="bright b">${esc(p.vendor)} · ${esc(p.model)}</span>`);
+  print(`<span class="dim">│  ${fmt(p.words)} words · ${p.date||"date unknown"} · via ${p.source} · <a href="${REPO[p.source]+encodeURI(p.file)}" target="_blank" rel="noopener">source ↗</a></span>`);
+  print(`<span class="dim">└${"─".repeat(46)}</span>`);
+  const CAP=140;
+  lines.slice(0,CAP).forEach(l=>print(`<span class="dim">│ </span>${esc(l)||" "}`));
+  if(lines.length>CAP) print(`<span class="amber">… ${lines.length-CAP} more lines truncated — full file: <a href="${REPO[p.source]+encodeURI(p.file)}" target="_blank" rel="noopener">open source ↗</a></span>`);
+};
+CMDS.read = CMDS.cat;
+CMDS.search = (arg) => {
+  if(!arg) return print(`<span class="red">usage: search &lt;term&gt;</span>`);
+  const rows = findPrompts(arg);
+  if(!rows.length) return print(`<span class="red">nothing matches "${esc(arg)}"</span>`);
+  rows.slice(0,30).forEach(p=>print(`  <span class="cyan">${pad(p.vendor,14)}</span><span class="bright">${pad(p.model,34)}</span><span class="dim">${fmt(p.words)}w</span>`));
+  if(rows.length>30) print(`  <span class="dim">…and ${rows.length-30} more</span>`);
+  print(`<span class="dim">${rows.length} hit(s)</span>`);
+};
+CMDS.grep = (arg) => {
+  if(!arg) return print(`<span class="red">usage: grep &lt;term&gt;  (searches inside the prompt text)</span>`);
+  const q = arg.toLowerCase(); let hits=0;
+  const found = P.map(p=>{ const t=(TEXTS[p.uid]||"").toLowerCase(); const c=t.split(q).length-1; return c?{p,c}:null; }).filter(Boolean).sort((a,b)=>b.c-a.c);
+  if(!found.length) return print(`<span class="red">"${esc(arg)}" appears in 0 files</span>`);
+  found.slice(0,24).forEach(({p,c})=>{ hits+=c; print(`  <span class="amber">${pad(c+"×",5)}</span><span class="cyan">${pad(p.vendor,13)}</span><span class="bright">${p.model}</span>`); });
+  print(`<span class="dim">"${esc(arg)}" → ${found.length} files</span>`);
+};
+CMDS.stats = () => {
+  const v = vendors(); const totalW = DATA.stats.total_words;
+  const bySrc={}; P.forEach(p=>bySrc[p.source]=(bySrc[p.source]||0)+1);
+  print(`<span class="bright b">CORPUS // DECLASSIFIED</span>`);
+  print(`  companies ...... <span class="bright">${DATA.stats.n_vendors}</span>`);
+  print(`  leaked files ... <span class="bright">${P.length}</span>  <span class="dim">(${Object.entries(bySrc).map(([k,n])=>n+" "+k).join(" · ")})</span>`);
+  print(`  total words .... <span class="bright">${fmt(totalW)}</span>`);
+  print(`  longest ........ <span class="bright">${fmt(P[0].words)}w</span> <span class="dim">${P[0].vendor} ${P[0].model}</span>`);
+  print(`  jailbreaks ..... <span class="bright">${DATA.jailbreaks.stats.n_files}</span> files vs <span class="bright">${DATA.jailbreaks.stats.n_targets}</span> models <span class="dim">(try: spells)</span>`);
+};
+CMDS.top = (arg) => {
+  const mode = (arg||"length").toLowerCase();
+  let key, label;
+  if(mode.startsWith("boss")){ key=p=>p.imperative_per_1k; label="BOSSIEST (cmds / 1k words)"; }
+  else if(mode.startsWith("secret")){ key=p=>p.categories["Prompt secrecy"]; label="MOST PARANOID (‘never reveal me’ clauses)"; }
+  else { key=p=>p.words; label="LONGEST RULEBOOKS (words)"; }
+  const rows=[...P].sort((a,b)=>key(b)-key(a)).slice(0,10); const max=key(rows[0])||1;
+  print(`<span class="bright b">${label}</span>`);
+  rows.forEach((p,i)=>print(`  <span class="dim">${pad((i+1)+".",3)}</span>${bar(key(p)/max,18)} <span class="bright">${pad(fmt(Math.round(key(p)*(mode.startsWith("boss")?10:1))/(mode.startsWith("boss")?10:1)),7)}</span><span class="cyan">${p.vendor}</span> <span class="dim">${p.model}</span>`));
+};
+CMDS.spells = () => {
+  const jb=DATA.jailbreaks; const max=jb.techniques[0].hits;
+  print(`<span class="bright b">COUNTER-SPELLS // L1B3RT4S</span> <span class="dim">${jb.stats.n_files} jailbreak files, aggregate only</span>\n`);
+  jb.techniques.forEach(t=>print(`  ${bar(t.hits/max,20)} <span class="bright">${pad(fmt(t.hits),5)}</span><span class="cyan">${t.name}</span> <span class="dim">(${t.docs} files)</span>`));
+  print(`\n<span class="dim">technique keyword counts — no exploit text stored.</span>`);
+};
+CMDS.jailbreaks = CMDS.spells; CMDS.spell = CMDS.spells;
+CMDS.random = () => { const p=P[Math.floor((Date.now()%P.length))]; CMDS.cat(p.model); };
+CMDS.about = () => {
+  print(`<span class="bright b">CL4R1T4S // DECLASSIFIED TERMINAL</span>`);
+  print(`A read-only console over <span class="bright">${P.length}</span> leaked AI system prompts + a jailbreak archive.`);
+  print(`Everything here is public. These are the <span class="bright">instructions</span> given to models — not training data.\n`);
+  print(`<span class="dim">DATA //</span> <a href="https://github.com/elder-plinius/CL4R1T4S" target="_blank" rel="noopener">CL4R1T4S</a> + <a href="https://github.com/elder-plinius/L1B3RT4S" target="_blank" rel="noopener">L1B3RT4S</a> by <span class="cyan">Pliny · @elder-plinius</span>,`);
+  print(`         + <a href="https://github.com/jujumilk3/leaked-system-prompts" target="_blank" rel="noopener">leaked-system-prompts</a> by <span class="cyan">@jujumilk3</span>. Visualized, not collected, here.`);
+};
+CMDS.credits = CMDS.about;
+CMDS.clear = () => { screen.innerHTML=""; };
+CMDS.whoami = () => print(`<span class="dim">guest · clearance:</span> <span class="amber">PUBLIC</span> <span class="dim">— it's all already leaked, friend.</span>`);
+CMDS.banner = () => banner();
+/* easter eggs */
+CMDS.sudo = () => print(`<span class="red">nice try.</span> <span class="dim">you have no power here (it's a static page).</span>`);
+CMDS.pliny = () => print(`<span class="amber">🔓 LOVE PLINY.</span> <span class="dim">the reason any of this is readable.</span>`);
+CMDS.hack = () => print(`<span class="dim">you're already in. the door was never locked.</span>`);
+CMDS.exit = () => print(`<span class="dim">there is no exit. refresh to reboot the terminal.</span>`);
+CMDS["rm"] = () => print(`<span class="dim">🙂 the files are already public. nothing left to destroy.</span>`);
+
+/* ---------- runner ---------- */
+const HIST = []; let hix = -1;
+function run(raw){
+  const cmd = raw.trim();
+  print(`<span id="ps1"><span class="u">operative</span><span class="dim">@declassified:~$</span></span> <span class="bright">${esc(raw)}</span>`);
+  if(!cmd) return;
+  HIST.unshift(cmd); hix=-1;
+  const [name,...rest] = cmd.split(/\s+/);
+  const arg = rest.join(" ");
+  const fn = CMDS[name.toLowerCase()];
+  if(fn){ try{ fn(arg); }catch(e){ print(`<span class="red">error: ${esc(e.message)}</span>`); } }
+  else print(`<span class="red">command not found: ${esc(name)}</span> <span class="dim">— type <span class="cyan">help</span></span>`);
+}
+
+/* input handling */
+input.addEventListener("keydown", e=>{
+  if(e.key==="Enter"){ const v=input.value; input.value=""; run(v); }
+  else if(e.key==="ArrowUp"){ e.preventDefault(); if(hix<HIST.length-1){ hix++; input.value=HIST[hix]; } }
+  else if(e.key==="ArrowDown"){ e.preventDefault(); if(hix>0){ hix--; input.value=HIST[hix]; } else { hix=-1; input.value=""; } }
+  else if(e.key==="Tab"){ e.preventDefault();
+    const v=input.value.trim().toLowerCase(); if(!v) return;
+    const names=Object.keys(vendors()); const m=names.find(n=>n.toLowerCase().startsWith(v.split(" ").pop()));
+    if(m){ const parts=input.value.split(" "); parts[parts.length-1]=m; input.value=parts.join(" "); }
+  }
+});
+document.addEventListener("click", ()=>input.focus());
+document.addEventListener("keydown", ()=>{ if(document.activeElement!==input) input.focus(); });
+
+/* ---------- boot ---------- */
+function banner(){
+  print(`<pre class="box">╔══════════════════════════════════════════════════╗
+║   C L 4 R 1 T 4 S   ·   DECLASSIFIED TERMINAL      ║
+╚══════════════════════════════════════════════════╝</pre>`);
+}
+async function boot(){
+  const seq = [
+    ["<span class='dim'>booting thirdwurld secure shell v2.6…</span>", 220],
+    ["<span class='dim'>mounting <span class='cyan'>/archive/cl4r1t4s</span> …</span>", 260],
+    [`<span class='dim'>indexing <span class='bright'>${P.length}</span> classified files across <span class='bright'>${DATA.stats.n_vendors}</span> vendors …</span>`, 320],
+    [`<span class='dim'>loading jailbreak taxonomy <span class='cyan'>/archive/l1b3rt4s</span> …</span>`, 240],
+    ["<span class='amber'>⚠ WARNING:</span> <span class='dim'>corpus contains live prompt-injection payloads. read-only mode engaged.</span>", 360],
+    ["<span class='bright b'>ACCESS GRANTED.</span>", 240],
+    ["", 120],
+  ];
+  banner(); await sleep(260);
+  for(const [html,ms] of seq){ print(html); await sleep(ms); }
+  print(`Type <span class="cyan">help</span> to begin. Try <span class="cyan">stats</span>, <span class="cyan">ls</span>, <span class="cyan">cat opus 5</span>, or <span class="cyan">spells</span>.`);
+  print("");
+  line.hidden=false; input.focus();
+}
+boot();
+</script>

@@ -8,6 +8,8 @@ self-contained page.
 
 **▶ Live demo:** https://rishvaiyer.github.io/declassified-ai/
 
+![Declassified AI interface](docs/screenshots/declassified-ai-home.png)
+
 > **Data credit.** System prompts come from two public archives: **[CL4R1T4S](https://github.com/elder-plinius/CL4R1T4S)**
 > and the jailbreak archive **[L1B3RT4S](https://github.com/elder-plinius/L1B3RT4S)**, both by
 > **[Pliny · @elder-plinius](https://github.com/elder-plinius)**, plus **[leaked-system-prompts](https://github.com/jujumilk3/leaked-system-prompts)**

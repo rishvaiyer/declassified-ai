@@ -1,61 +1,56 @@
-# 🗂️ Declassified AI — The Secret Rulebooks of the Machines
+# Declassified AI
 
-Every AI chatbot is handed a hidden list of rules before it ever talks to you —
-who it is, what it must never say. This project takes **229 leaked system prompts
-from 53 companies**, pulls them apart, lays them side by side, and then flips the
-dossier over to look at the **jailbreaks built to break them**. One interactive,
-self-contained page.
+An interactive analysis of 229 publicly archived AI system prompts from 53
+companies, plus the aggregate shape of the jailbreaks written against them. One
+self-contained page, no build step to view it.
 
-**▶ Live demo:** https://rishvaiyer.github.io/declassified-ai/
+**Live:** https://rishvaiyer.github.io/declassified-ai/
 
 ![Declassified AI interface](docs/screenshots/declassified-ai-home.png)
 
-> **Data credit.** System prompts come from two public archives: **[CL4R1T4S](https://github.com/elder-plinius/CL4R1T4S)**
+> **Data credit.** System prompts come from two public archives: [CL4R1T4S](https://github.com/elder-plinius/CL4R1T4S)
 > and the jailbreak archive **[L1B3RT4S](https://github.com/elder-plinius/L1B3RT4S)**, both by
 > **[Pliny · @elder-plinius](https://github.com/elder-plinius)**, plus **[leaked-system-prompts](https://github.com/jujumilk3/leaked-system-prompts)**
 > by **[@jujumilk3](https://github.com/jujumilk3)**. This project only *visualizes* their public
-> collections — all credit for gathering the prompts is theirs.
+> collections, all credit for gathering the prompts is theirs.
 
 ---
 
-## What it shows
+## The six views
 
-Six "exhibits," styled as a declassified intelligence file:
+- **Who says no to what.** A company by topic heat map of what each prompt keeps
+  raising: weapons, self-harm, copyright, elections, "don't reveal this prompt."
+- **Who writes the most.** A length leaderboard that toggles between raw word
+  count and command density (must/never/always per 1,000 words).
+- **Who copied whose homework.** A force-directed web of all 229 prompts with
+  draggable nodes, plus a map view laid out by overall similarity. Hover a node
+  for its closest match from a different company.
+- **The archive.** Every file, searchable, each linking back to its source repo.
+- **The diff machine.** Line-by-line diff between any two prompts.
+- **Counter-spells.** The jailbreak side, read only in aggregate: which
+  techniques (persona, token injection, encoding) appear most. No exploit text is
+  reproduced.
 
-- **A · Who Says No To What** — a company × topic heat map of what each lab's rulebooks
-  keep raising (weapons, self-harm, copyright, elections, "don't reveal this prompt"…).
-- **B · Who Writes The Most** — length leaderboard, toggling raw word count vs.
-  *bossiness* (must/never/always commands per 1,000 words).
-- **C · Who Copied Whose Homework** — an interactive **force-directed web** of all 229
-  rulebooks (drag the nodes!), plus a **Map** view that settles them by overall similarity.
-  Hover any node for its closest cousin from a *different* company.
-- **D · The Archive** — every file, searchable, each linking back to its source repo.
-- **E · The Diff Machine** — line-by-line diff between any two rulebooks; watch a model's
-  prompt balloon from one version to the next.
-- **F · The Counter-Spells** — the *attack* side. Pliny's L1B3RT4S jailbreaks read only in
-  the **aggregate**: which techniques (persona, token injection, encoding…) show up most.
-  No exploit text is reproduced — just the shape of the attack surface.
+## What the data shows
 
-## A few things it surfaces
+- Coding agents cluster tightly across company lines (Windsurf and Cursor and
+  their neighbors sit close together in the web).
+- Anthropic's "Claude Design" prompt and Meta's "Muse Spark" share about 74% of
+  their vocabulary.
+- The longest prompts run past 25,000 words.
+- Token and format injection and persona-roleplay dominate the L1B3RT4S
+  jailbreaks. Encoding tricks are rare.
+- The whole corpus is about 667,000 words of instruction.
 
-- **Coding agents copy each other** across company lines (Windsurf ↔ Cursor and friends
-  cluster tightly in the web).
-- **Cross-company twins:** Anthropic's "Claude Design" prompt and Meta's "Muse Spark"
-  share ~74% of their vocabulary.
-- **Frontier chat models write novels** — the longest rulebooks run past 25,000 words.
-- **Jailbreaks lean on structure:** token/format injection and persona-roleplay dominate
-  L1B3RT4S; encoding tricks are rare.
-- **667,000 words** of hidden instruction across the whole corpus.
-
-> **Read the tallies as _emphasis_, not verdicts.** Category and technique scores are keyword
-> mentions — a longer document mentions more of everything. Similarity is TF-IDF (word
-> bigrams + character n-grams), not neural embeddings.
+> **The tallies are emphasis, not verdicts.** Category and technique scores are
+> keyword mentions, and a longer document mentions more of everything. Similarity
+> is TF-IDF over word bigrams and character n-grams, not neural embeddings.
 
 ## How it's built
 
-- **Zero-dependency to view.** `index.html` is fully self-contained — all data baked in,
-  no server, no external requests, no build step to run it. The similarity web is a
-  hand-rolled canvas force simulation (no D3).
+- **Zero-dependency to view.** `index.html` is self-contained: all data baked in,
+  no server, no external requests, no build step. The similarity web is a
+  hand-rolled canvas force simulation, no D3.
 - **Pipeline** (`src/`, needs only `numpy`):
   `build_data.py` merges + de-dupes both rulebook archives → `embed.py` computes the
   TF-IDF similarity graph → `jailbreaks.py` builds the aggregate counter-spells taxonomy →
@@ -65,7 +60,7 @@ Six "exhibits," styled as a declassified intelligence file:
 ## Regenerating the data
 
 ```bash
-# from the repo root — clone the three public archives
+# from the repo root, clone the three public archives
 git clone --depth 1 https://github.com/elder-plinius/CL4R1T4S.git       CL4R1T4S
 git clone --depth 1 https://github.com/jujumilk3/leaked-system-prompts.git juju
 git clone --depth 1 https://github.com/elder-plinius/L1B3RT4S.git       L1B3RT4S

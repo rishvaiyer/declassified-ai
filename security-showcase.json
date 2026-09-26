@@ -1,0 +1,30 @@
+{
+  "project": "Declassified AI",
+  "category": "Public AI system-prompt analysis",
+  "one_liner": "An interactive analysis of public AI system-prompt archives and aggregate jailbreak technique patterns without reproducing exploit text.",
+  "hook": "Hundreds of public AI rulebooks, one map: compare what they emphasize, how they cluster, and where their instructions overlap.",
+  "safe_demo_scenes": [
+    "Open the similarity web and move between clusters of public archived prompts.",
+    "Use the diff machine on two public prompts and show line-level structural differences.",
+    "Show Counter-spells only as aggregate technique categories, never exploit text."
+  ],
+  "verification_commands": [
+    "python -m py_compile src/build_data.py src/embed.py src/jailbreaks.py src/build.py"
+  ],
+  "allowed_claims": [
+    "The project analyzes public prompt archives and credits their upstream sources.",
+    "Similarity uses TF-IDF features rather than neural embeddings.",
+    "The jailbreak view is aggregate and does not reproduce exploit text."
+  ],
+  "forbidden_claims": [
+    "The archive is complete or authoritative for all AI systems.",
+    "Keyword tallies measure safety quality.",
+    "The project reveals private prompts or operational jailbreak payloads."
+  ],
+  "privacy": [
+    "Show only public archive content already included by the project.",
+    "Do not surface hidden/private prompt data or raw jailbreak payloads."
+  ],
+  "tone": "editorial, investigative, restrained",
+  "preferred_duration_seconds": 22
+}\n
